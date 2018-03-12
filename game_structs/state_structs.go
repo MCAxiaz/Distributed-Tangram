@@ -6,6 +6,7 @@ package game_structs
 // - Timer: The timer counts down.
 // - Players: It holds the players currently in the game.
 // - Shape: It is the silhouette of the shape players are trying to form with tans.
+// - Host: The player that is hosting the game.
 type GameState struct {
 	Tan     *[]Tan
 	Timer   uint8
@@ -19,12 +20,10 @@ type GameState struct {
 // - Location: The location of the tan on a canvas
 // - Rotation: Alignment of tan in increments of 5 degrees
 type Tan struct {
-	Player   *Player // A fixed tan would have a nil player value
+	Player   *Player // A fixed tan from a shape silhouette would have a nil player value
 	Location *Location
 	Rotation uint8
 }
-
-type Axis int
 
 // Location is a struct that holds the x and y coordinates of a tan's location by its centre.
 type Location struct {
@@ -40,5 +39,5 @@ type Player struct {
 
 // Silhouette is a struct holding information on the silhouette of the target shape.
 type Silhouette struct {
-	FixedTans *[]Tan
+	FixedTan *[]Tan
 }
