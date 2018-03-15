@@ -9,31 +9,53 @@ package game_structs
 // - Host: The player that is hosting the game.
 type GameState struct {
 	Tan     *[]Tan
-	Timer   uint8
+	Timer   uint32
 	Players *[]Player
 	Shape   *Silhouette
 	Host    *Player
 }
 
 // Tan is a struct that holds the following information:
+// - Shape: The shape of the tan
 // - Player: The player that last held the tan
 // - Location: The location of the tan on a canvas
 // - Rotation: Alignment of tan in increments of 5 degrees
 type Tan struct {
+	Shape    *Shape
 	Player   *Player // A fixed tan from a shape silhouette would have a nil player value
-	Location *Location
-	Rotation uint8
+	Location *Point  // Location is a pointer to the Point struct that holds the x and y coordinates of a tan's location by its centre.
+	Rotation uint32
 }
 
-// Location is a struct that holds the x and y coordinates of a tan's location by its centre.
-type Location struct {
-	X int
-	Y int
+// Shape contains information to create an SVG string.
+// Shapes are hardcoded and do not change throughout the game.
+// - Points: eg. if we have a rectangle, the list of points would include the four corners
+// - and the coordinate of the points would be based on the fact that the centre of the shape is (0, 0).
+type Shape struct {
+	ShapeType ShapeType // rectangle or triangle
+	D         string    // eg. d="M10 10 H 90 V 90 H 10 L 10 10"
+	Fill      string
+	Stroke    string
+	Points    *[]Point  // Points using centre point of shape (location field of Tan) as origin.
 }
+
+// Point is a struct containing a pair of x and y coordinates.
+type Point struct {
+	X int32
+	Y int32
+}
+
+type ShapeType int
+
+const (
+	PATH ShapeType = iota
+	RECTANGLE
+	TRIANGLE
+)
 
 // Player is a struct that holds player information.
 type Player struct {
-	ID   uint8
+	ID   uint32
 	Name string
 }
 
