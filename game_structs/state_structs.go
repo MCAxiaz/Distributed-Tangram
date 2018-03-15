@@ -32,11 +32,17 @@ type Tan struct {
 // - Points: eg. if we have a rectangle, the list of points would include the four corners
 // - and the coordinate of the points would be based on the fact that the centre of the shape is (0, 0).
 type Shape struct {
-	ShapeType ShapeType // rectangle or triangle
-	D         string    // eg. d="M10 10 H 90 V 90 H 10 L 10 10"
-	Fill      string
-	Stroke    string
-	Points    *[]Point  // Points using centre point of shape (location field of Tan) as origin.
+	Points *[]Point // Points using centre point of shape (location field of Tan) as origin.
+	Edges  *[]Line
+	Fill   string
+	Stroke string
+}
+
+// Line is a struct that holds information about a line that joins from point (x1, y1) to (x2, y2).
+// Coordinates are relative to the centre of the shape.
+type Line struct {
+	Point1 *Point
+	Point2 *Point
 }
 
 // Point is a struct containing a pair of x and y coordinates.
@@ -44,14 +50,6 @@ type Point struct {
 	X int32
 	Y int32
 }
-
-type ShapeType int
-
-const (
-	PATH ShapeType = iota
-	RECTANGLE
-	TRIANGLE
-)
 
 // Player is a struct that holds player information.
 type Player struct {
