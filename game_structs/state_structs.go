@@ -31,18 +31,11 @@ type Tan struct {
 // Shapes are hardcoded and do not change throughout the game.
 // - Points: eg. if we have a rectangle, the list of points would include the four corners
 // - and the coordinate of the points would be based on the fact that the centre of the shape is (0, 0).
+// - The points are ordered in a clockwise fashion.
 type Shape struct {
 	Points *[]Point // Points using centre point of shape (location field of Tan) as origin.
-	Edges  *[]Line
 	Fill   string
 	Stroke string
-}
-
-// Line is a struct that holds information about a line that joins from point (x1, y1) to (x2, y2).
-// Coordinates are relative to the centre of the shape.
-type Line struct {
-	Point1 *Point
-	Point2 *Point
 }
 
 // Point is a struct containing a pair of x and y coordinates.
