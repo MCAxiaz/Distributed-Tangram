@@ -23,15 +23,15 @@ func main() {
 
 	addr := os.Args[1]
 
-	http.HandleFunc("/", index)
 	http.HandleFunc("/ws", webSocketHandler)
+	http.Handle("/", http.FileServer(http.Dir("web")))
 
 	fmt.Println("Listening to requests at addr", addr)
-	http.ListenAndServe(addr, nil)
-}
-
-func index(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "web/index.html")
+	err := http.ListenAndServe(addr, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 func webSocketHandler(w http.ResponseWriter, r *http.Request) {
