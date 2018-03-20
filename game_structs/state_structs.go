@@ -2,7 +2,7 @@ package game_structs
 
 // GameState is a struct that holds the state of a game.
 // It has the following fields:
-// - Tan: It holds a list of tans ordered and prioritized by last interaction.
+// - Tans: It holds a list of tans ordered and prioritized by last interaction.
 // - Timer: The timer counts down.
 // - Players: It holds the players currently in the game.
 // - Shape: It is the silhouette of the shape players are trying to form with tans.
