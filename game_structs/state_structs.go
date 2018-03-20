@@ -8,7 +8,7 @@ package game_structs
 // - Shape: It is the silhouette of the shape players are trying to form with tans.
 // - Host: The player that is hosting the game.
 type GameState struct {
-	Tan     []*Tan
+	Tans     []*Tan
 	Timer   uint32
 	Players *[]Player
 	Shape   *Silhouette
