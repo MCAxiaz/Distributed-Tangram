@@ -1,18 +1,26 @@
-package game_structs
+package tangram
 
 // GameState is a struct that holds the state of a game.
 // It has the following fields:
 // - Tans: It holds a list of tans ordered and prioritized by last interaction.
 // - Timer: The timer counts down.
 // - Players: It holds the players currently in the game.
-// - Shape: It is the silhouette of the shape players are trying to form with tans.
 // - Host: The player that is hosting the game.
 type GameState struct {
-	Tans     []*Tan
+	Tans    []*Tan
 	Timer   uint32
-	Players *[]Player
-	Shape   *Silhouette
+	Players []*Player
 	Host    *Player
+	Config  *GameConfig
+}
+
+// GameConfig is the starting configuration of a game
+// - Tans: Tans position when the game begins
+// - Target: The shape players are trying to form with tans.
+type GameConfig struct {
+	Size   Point
+	Tans   []*Tan
+	Target []*Tan
 }
 
 // Tan is a struct that holds the following information:
@@ -22,8 +30,8 @@ type GameState struct {
 // - Rotation: Alignment of tan in increments of 5 degrees
 type Tan struct {
 	Shape    *Shape
-	Player   *Player // A fixed tan from a shape silhouette would have a nil player value
-	Location *Point  // Location is a pointer to the Point struct that holds the x and y coordinates of a tan's location by its centre.
+	Player   PlayerID // A fixed tan from a shape silhouette would have a nil player value
+	Location Point    // Location is a pointer to the Point struct that holds the x and y coordinates of a tan's location by its centre.
 	Rotation uint32
 }
 
@@ -33,7 +41,7 @@ type Tan struct {
 // - and the coordinate of the points would be based on the fact that the centre of the shape is (0, 0).
 // - The points are ordered in a clockwise fashion.
 type Shape struct {
-	Points *[]Point // Points using centre point of shape (location field of Tan) as origin.
+	Points []Point // Points using centre point of shape (location field of Tan) as origin.
 	Fill   string
 	Stroke string
 }
@@ -46,11 +54,10 @@ type Point struct {
 
 // Player is a struct that holds player information.
 type Player struct {
-	ID   uint32
+	ID   PlayerID
 	Name string
+	Addr string
 }
 
-// Silhouette is a struct holding information on the silhouette of the target shape.
-type Silhouette struct {
-	FixedTan *[]Tan
-}
+// PlayerID is the ID of a Player
+type PlayerID = uint32

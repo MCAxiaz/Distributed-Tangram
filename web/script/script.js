@@ -19,4 +19,14 @@ function openSocket() {
     return socket;
 }
 
-var socket = openSocket();
+document.addEventListener("DOMContentLoaded", function(e) {
+    var socket = openSocket();
+    socket.addEventListener("message", function(e) {
+        var view = document.getElementById("view");
+        view.innerHTML = e.data
+    });
+    socket.addEventListener("open", function(e) {
+        socket.send("");
+    })
+    
+})
