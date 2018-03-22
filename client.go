@@ -70,7 +70,7 @@ func getWebSocketHandler(game *tangram.Game) func(http.ResponseWriter, *http.Req
 		}
 
 		for {
-			messageType, _, err := conn.ReadMessage()
+			_, _, err := conn.ReadMessage()
 
 			if err != nil {
 				log.Println(err)
@@ -79,7 +79,7 @@ func getWebSocketHandler(game *tangram.Game) func(http.ResponseWriter, *http.Req
 
 			state := game.GetState()
 			svg := render(state)
-			if err := conn.WriteMessage(messageType, []byte(svg)); err != nil {
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(svg)); err != nil {
 				log.Println(err)
 				return
 			}
