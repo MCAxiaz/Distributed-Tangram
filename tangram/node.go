@@ -19,6 +19,7 @@ type ConnectRequest struct {
 	Player Player
 }
 
+// startNode instantiates the RPC server which will allow for communication between client nodes
 func startNode(localAddr string) (node *Node, err error) {
 	addr, err := net.ResolveTCPAddr("tcp", localAddr)
 	if err != nil {

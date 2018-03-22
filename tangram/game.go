@@ -12,6 +12,7 @@ func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
 	state := new(GameState)
 
 	node, err := startNode(localAddr)
+	node.state = state
 	if err != nil {
 		return
 	}
@@ -42,6 +43,7 @@ func (game *Game) Subscribe() *chan bool {
 	return &channel
 }
 
-func (game *Game) GetState() *GameState {
+// GetState retrieves the current state of the board
+func (game Game) GetState() *GameState {
 	return game.state
 }
