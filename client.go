@@ -45,9 +45,9 @@ func main() {
 
 	fmt.Println("Listening to requests at addr", addr)
 	err = http.ListenAndServe(addr, nil)
+
 	if err != nil {
-		log.Println(err)
-		return
+		log.Fatalln(err)
 	}
 }
 
@@ -63,15 +63,14 @@ func readConfig() (config *tangram.GameConfig, err error) {
 }
 
 func getWebSocketHandler(game *tangram.Game) func(http.ResponseWriter, *http.Request) {
-	webSocketHandler := func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Println(err)
-			return
+			log.Fatalln(err)
 		}
 
 		for {
-			messageType, p, err := conn.ReadMessage()
+			_, _, err := conn.ReadMessage()
 
 			if err != nil {
 				log.Println(err)
@@ -84,16 +83,8 @@ func getWebSocketHandler(game *tangram.Game) func(http.ResponseWriter, *http.Req
 				log.Println(err)
 				return
 			}
-
-			continue
-			// TODO: currently just echoes. We should unmarshall the message and act accordingly based on event type
-			if err := conn.WriteMessage(messageType, p); err != nil {
-				log.Println(err)
-				return
-			}
 		}
 	}
-	return webSocketHandler
 }
 
 func render(state *tangram.GameState) string {
