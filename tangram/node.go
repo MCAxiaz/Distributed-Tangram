@@ -5,18 +5,28 @@ import (
 	"math/rand"
 	"net"
 	"net/rpc"
+	"time"
+
+	"../lamport"
 )
 
 // Node is the exposed RPC interface for a tangram node
 type Node struct {
-	state    *GameState
+	game     *Game
 	player   *Player
 	listener net.Listener
 }
 
-// ConnectRequest request argument for Node.Connect
+// ConnectRequest is request argument for Node.Connect
 type ConnectRequest struct {
 	Player Player
+}
+
+// LockTanRequest is request argument for Node.Connect
+type LockTanRequest struct {
+	Tan    TanID
+	Player PlayerID
+	Time   lamport.Time
 }
 
 // startNode instantiates the RPC server which will allow for communication between client nodes
@@ -46,7 +56,7 @@ func startNode(localAddr string) (node *Node, err error) {
 
 func newPlayer(addr string) (player *Player) {
 	player = new(Player)
-	player.ID = rand.Uint32()
+	player.ID = rand.Int()
 	player.Addr = addr
 	return
 }
@@ -54,12 +64,32 @@ func newPlayer(addr string) (player *Player) {
 // RPC
 
 // Connect connects to a node with the new player's information
-func (node *Node) Connect(req *ConnectRequest, res *int32) (err error) {
-	for i, player := range node.state.Players {
+func (node *Node) Connect(req *ConnectRequest, res *bool) (err error) {
+	found := false
+	for i, player := range node.game.state.Players {
 		if req.Player.ID == player.ID {
-			*node.state.Players[i] = req.Player
+			node.game.state.Players[i] = &req.Player
+			found = true
+			break
 		}
 	}
 
+	if !found {
+		node.game.state.Players = append(node.game.state.Players, &req.Player)
+	}
+
+	*res = found
+	return
+}
+
+// GetTime returns the local timer
+func (node *Node) GetTime(req int, res *time.Duration) (err error) {
+	*res = node.game.GetTime()
+	return
+}
+
+// LockTan locks the tan according to request
+func (node *Node) LockTan(req LockTanRequest, ok *bool) (err error) {
+	*ok, err = node.game.lockTan(req.Tan, req.Player, req.Time)
 	return
 }

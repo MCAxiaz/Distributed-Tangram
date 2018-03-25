@@ -1,14 +1,20 @@
 package tangram
 
+import (
+	"time"
+
+	"../lamport"
+)
+
 // GameState is a struct that holds the state of a game.
 // It has the following fields:
 // - Tans: It holds a list of tans ordered and prioritized by last interaction.
-// - Timer: The timer counts down.
+// - Timer: The time when the game started.
 // - Players: It holds the players currently in the game.
 // - Host: The player that is hosting the game.
 type GameState struct {
 	Tans    []*Tan
-	Timer   uint32
+	Timer   time.Time
 	Players []*Player
 	Host    *Player
 	Config  *GameConfig
@@ -24,15 +30,19 @@ type GameConfig struct {
 }
 
 // Tan is a struct that holds the following information:
+// - ID: The ID of the tan
 // - Shape: The shape of the tan
-// - Player: The player that last held the tan
+// - Player: The ID of the player controlling the tan
 // - Location: The location of the tan on a canvas
 // - Rotation: Alignment of tan in increments of 5 degrees
+// - Clock: A logical clock for this tan
 type Tan struct {
+	ID       TanID
 	Shape    *Shape
-	Player   PlayerID // A fixed tan from a shape silhouette would have a nil player value
-	Location Point    // Location is a pointer to the Point struct that holds the x and y coordinates of a tan's location by its centre.
+	Player   PlayerID
+	Location Point
 	Rotation uint32
+	Clock    lamport.Clock
 }
 
 // Shape contains information to create an SVG string.
@@ -60,4 +70,9 @@ type Player struct {
 }
 
 // PlayerID is the ID of a Player
-type PlayerID = uint32
+// A valid ID must be non-negative
+// An ID of -1 means nil
+type PlayerID = int
+
+// TanID is the ID of a Tan
+type TanID = uint32
