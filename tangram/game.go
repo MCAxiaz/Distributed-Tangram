@@ -106,6 +106,10 @@ func (game *Game) GetTime() time.Duration {
 	return time.Now().Sub(game.state.Timer)
 }
 
+func (game *Game) GetConfig() *GameConfig {
+	return game.config
+}
+
 func (game *Game) syncTime(player *Player) (err error) {
 	client, err := rpc.Dial("tcp", player.Addr)
 	if err != nil {

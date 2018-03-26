@@ -78,7 +78,8 @@ func getWebSocketHandler(game *tangram.Game) func(http.ResponseWriter, *http.Req
 			}
 
 			state := game.GetState()
-			svg := render(state)
+			config := game.GetConfig()
+			svg := render(state, config)
 			if err := conn.WriteMessage(websocket.TextMessage, []byte(svg)); err != nil {
 				log.Println(err)
 				return
@@ -87,9 +88,9 @@ func getWebSocketHandler(game *tangram.Game) func(http.ResponseWriter, *http.Req
 	}
 }
 
-func render(state *tangram.GameState) string {
+func render(state *tangram.GameState, config *tangram.GameConfig) string {
 	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf(`<svg width="%d" height="%d">`, state.Config.Size.X, state.Config.Size.Y))
+	buf.WriteString(fmt.Sprintf(`<svg width="%d" height="%d">`, config.Size.X, config.Size.Y))
 	for _, tan := range state.Tans {
 		buf.WriteString(renderTan(tan))
 	}
