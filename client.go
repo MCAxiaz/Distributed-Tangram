@@ -12,6 +12,7 @@ import (
 
 	"./tangram"
 	"github.com/gorilla/websocket"
+	"strconv"
 )
 
 var upgrader = websocket.Upgrader{
@@ -90,14 +91,14 @@ func getWebSocketHandler(game *tangram.Game) func(http.ResponseWriter, *http.Req
 func render(state *tangram.GameState) string {
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf(`<svg width="%d" height="%d">`, state.Config.Size.X, state.Config.Size.Y))
-	for _, tan := range state.Tans {
-		buf.WriteString(renderTan(tan))
+	for i, tan := range state.Tans {
+		buf.WriteString(renderTan(tan, "tan"+strconv.Itoa(i+1)))
 	}
 	buf.WriteString(`</svg>`)
 	return buf.String()
 }
 
-func renderTan(tan *tangram.Tan) string {
+func renderTan(tan *tangram.Tan, id string) string {
 	transform := fmt.Sprintf(`translate(%d, %d) rotate(%d)`, tan.Location.X, tan.Location.Y, tan.Rotation)
 
 	var buf bytes.Buffer
@@ -112,6 +113,6 @@ func renderTan(tan *tangram.Tan) string {
 	buf.WriteString("Z")
 
 	d := buf.String()
-	path := fmt.Sprintf(`<path fill="%s" stroke="%s" transform="%s" d="%s">`, tan.Shape.Fill, tan.Shape.Stroke, transform, d)
+	path := fmt.Sprintf(`<path id="%s" class="tan draggable" fill="%s" stroke="%s" transform="%s" d="%s">`, id, tan.Shape.Fill, tan.Shape.Stroke, transform, d)
 	return path
 }
