@@ -17,7 +17,6 @@ type GameState struct {
 	Timer   time.Time
 	Players []*Player
 	Host    *Player
-	Config  *GameConfig
 }
 
 // GameConfig is the starting configuration of a game

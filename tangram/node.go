@@ -1,6 +1,7 @@
 package tangram
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
@@ -20,6 +21,11 @@ type Node struct {
 // ConnectRequest is request argument for Node.Connect
 type ConnectRequest struct {
 	Player Player
+}
+
+type ConnectResponse struct {
+	state  *GameState
+	config *GameConfig
 }
 
 // LockTanRequest is request argument for Node.Connect
@@ -64,21 +70,22 @@ func newPlayer(addr string) (player *Player) {
 // RPC
 
 // Connect connects to a node with the new player's information
-func (node *Node) Connect(req *ConnectRequest, res *bool) (err error) {
-	found := false
-	for i, player := range node.game.state.Players {
+func (node *Node) Connect(req *ConnectRequest, res *GameConfig) (err error) {
+	for _, player := range node.game.state.Players {
 		if req.Player.ID == player.ID {
-			node.game.state.Players[i] = &req.Player
-			found = true
-			break
+			return fmt.Errorf("Player ID = %d is already in the game", player.ID)
 		}
 	}
 
-	if !found {
-		node.game.state.Players = append(node.game.state.Players, &req.Player)
-	}
+	node.game.state.Players = append(node.game.state.Players, &req.Player)
 
-	*res = found
+	*res = *node.game.config
+	return
+}
+
+// GetState returns the current game state
+func (node *Node) GetState(req int, res *GameState) (err error) {
+	*res = *node.game.GetState()
 	return
 }
 
