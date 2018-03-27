@@ -5,10 +5,6 @@ const EventType = {
     Unsubscribe: 3
 };
 
-var gameState = {
-    tans: new Map()
-};
-
 function openSocket() {
     var socket = new WebSocket(`ws://${location.host}/ws`);
     socket.addEventListener("open", function (e) {
@@ -30,15 +26,23 @@ document.addEventListener("DOMContentLoaded", function (e) {
         view.innerHTML = e.data;
         var paths = document.getElementsByTagName("path");
         for (var path of paths) {
-            // Parse numbers from transform attribute
-            gameState.tans.set(path.id, parseTransform(path.getAttribute("transform")));
-
             path.addEventListener("mousedown", function (e) {
                 console.log("Holding on to tan");
-                var tan = gameState.tans.get(path.id);
+                // Parse numbers from transform attribute
+                var currentTanPos = parseTransform(path.getAttribute("transform")); // returns { X, Y, R }
+                var currentMousePos = getMousePosition();
 
                 path.addEventListener("mousemove", function (e) {
-                    path.setAttribute("transform", "translate(" + tan.X + ", " + tan.Y + ") rotate(" + tan.R + ")");
+                    var currentMousePosition = {
+                        X: window.event.clientX - currentMousePosition.X,
+                        Y: window.event.clientY - currentMousePosition.Y,
+                        R: currentMousePosition.R
+                    };
+
+                    path.setAttribute("transform", "translate(" +
+                        currentTanPos.X - currentMousePosition.X + ", " +
+                        currentTanPos.Y - currentMousePosition.Y
+                        + ") rotate(" + currentTanPos.R + ")");
                 });
             });
 
@@ -49,7 +53,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
             path.addEventListener("x", function (e) {
 
             });
-            
+
             path.addEventListener("z", function (e) {
 
             });
