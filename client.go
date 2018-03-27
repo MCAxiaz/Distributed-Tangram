@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"./tangram"
+	"./webserver"
 	"github.com/gorilla/websocket"
 )
 
@@ -63,28 +64,16 @@ func readConfig() (config *tangram.GameConfig, err error) {
 }
 
 func getWebSocketHandler(game *tangram.Game) func(http.ResponseWriter, *http.Request) {
+	handler := webserver.NewHandler(game)
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		for {
-			_, _, err := conn.ReadMessage()
-
-			if err != nil {
-				log.Println(err)
-				return
-			}
-
-			state := game.GetState()
-			config := game.GetConfig()
-			svg := render(state, config)
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(svg)); err != nil {
-				log.Println(err)
-				return
-			}
-		}
+		err = handler.Handle(conn)
+		return
 	}
 }
 

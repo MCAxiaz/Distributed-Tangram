@@ -15,7 +15,7 @@ type Game struct {
 	config      *GameConfig
 	node        *Node
 	pool        *connectionPool
-	subscribers []*chan bool
+	subscribers []chan bool
 }
 
 // NewGame starts a new Game
@@ -34,7 +34,7 @@ func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
 		config:      config,
 		node:        node,
 		pool:        new(connectionPool),
-		subscribers: make([]*chan bool, 0),
+		subscribers: make([]chan bool, 0),
 	}
 
 	node.game = game
@@ -66,7 +66,7 @@ func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
 		config:      config,
 		node:        node,
 		pool:        new(connectionPool),
-		subscribers: make([]*chan bool, 0),
+		subscribers: make([]chan bool, 0),
 	}
 
 	go game.syncTime(state.Players[0])
@@ -90,10 +90,27 @@ func initState(config *GameConfig, player *Player) (state *GameState) {
 }
 
 // Subscribe returns a channel that outputs a value when the game state is updated
-func (game *Game) Subscribe() *chan bool {
+func (game *Game) Subscribe() chan bool {
 	channel := make(chan bool, 1)
-	game.subscribers = append(game.subscribers, &channel)
-	return &channel
+	game.subscribers = append(game.subscribers, channel)
+	return channel
+}
+
+func (game *Game) Unsubscribe(s chan bool) {
+	index := -1
+	for i, subscriber := range game.subscribers {
+		if subscriber == s {
+			close(subscriber)
+			index = i
+		}
+	}
+
+	if index < 0 {
+		panic("Channel not found")
+	}
+
+	game.subscribers[index] = game.subscribers[len(game.subscribers)-1]
+	game.subscribers = game.subscribers[:len(game.subscribers)-1]
 }
 
 // GetState retrieves the current state of the board

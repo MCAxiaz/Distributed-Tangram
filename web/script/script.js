@@ -21,12 +21,13 @@ function openSocket() {
 
 document.addEventListener("DOMContentLoaded", function(e) {
     var socket = openSocket();
+    var view = document.getElementById("view");
     socket.addEventListener("message", function(e) {
-        var view = document.getElementById("view");
         view.innerHTML = e.data
     });
     socket.addEventListener("open", function(e) {
-        socket.send("");
+        socket.send(JSON.stringify({
+            type:"GetState"
+        }));
     })
-    
 })
