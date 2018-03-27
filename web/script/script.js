@@ -30,24 +30,28 @@ document.addEventListener("DOMContentLoaded", function (e) {
                 console.log("Holding on to tan");
                 // Parse numbers from transform attribute
                 var currentTanPos = parseTransform(path.getAttribute("transform")); // returns { X, Y, R }
-                var currentMousePos = getMousePosition();
+                var startMousePos = getMousePosition();
 
-                path.addEventListener("mousemove", function (e) {
+                var listener = function (e) {
                     var currentMousePosition = {
-                        X: window.event.clientX - currentMousePosition.X,
-                        Y: window.event.clientY - currentMousePosition.Y,
-                        R: currentMousePosition.R
+                        X: window.event.clientX - startMousePos.X,
+                        Y: window.event.clientY - startMousePos.Y,
+                        // R: startMousePos.R
                     };
 
                     path.setAttribute("transform", "translate(" +
-                        currentTanPos.X - currentMousePosition.X + ", " +
-                        currentTanPos.Y - currentMousePosition.Y
+                        (currentTanPos.X + currentMousePosition.X) + ", " +
+                        (currentTanPos.Y + currentMousePosition.Y)
                         + ") rotate(" + currentTanPos.R + ")");
-                });
-            });
+                }
+                path.addEventListener("mousemove", listener);
 
-            path.addEventListener("mouseup", function (e) {
-                console.log("Releasing tan");
+                document.addEventListener("mouseup", function(e) {
+                    console.log("Releasing tan");
+                    path.removeEventListener("mousemove", listener)
+                }, {
+                    once:true
+                })
             });
 
             path.addEventListener("x", function (e) {
@@ -67,10 +71,10 @@ document.addEventListener("DOMContentLoaded", function (e) {
 function getMousePosition() {
     var x = window.event.clientX;
     var y = window.event.clientY;
-    return {x, y};
+    return {X: x, Y: y};
 }
 
 function parseTransform(str) {
     var coordinates = str.match(/\d+/g) ? str.match(/\d+/g) : [];
-    return {X: coordinates[0], Y: coordinates[1], R: coordinates[2]};
+    return {X: parseInt(coordinates[0]), Y: parseInt(coordinates[1]), R: parseInt(coordinates[2])};
 }
