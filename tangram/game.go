@@ -102,6 +102,7 @@ func (game *Game) Unsubscribe(s chan bool) {
 		if subscriber == s {
 			close(subscriber)
 			index = i
+			break
 		}
 	}
 

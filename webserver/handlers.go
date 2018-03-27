@@ -34,14 +34,16 @@ func (handler *Handler) Handle(conn *websocket.Conn) (err error) {
 	go func() {
 		for {
 			_, msg, err := conn.ReadMessage()
-			log.Printf("[Handle] Inbound Message %s", msg)
 			if err != nil {
 				close(msgChan)
 				return
 			}
+			log.Printf("[Handle] Inbound Message %s", msg)
 			msgChan <- msg
 		}
 	}()
+
+	conn.WriteJSON(OutputMessage{"config", handler.game.GetConfig()})
 
 	for {
 		select {
