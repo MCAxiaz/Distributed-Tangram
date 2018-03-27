@@ -19,9 +19,9 @@ function openSocket() {
     return socket;
 }
 
+var socket = openSocket();
 document.addEventListener("DOMContentLoaded", function(e) {
-    var socket = openSocket();
-    var view = document.getElementById("view");
+    var view = document.getElementById("dump");
     socket.addEventListener("message", function(e) {
         view.innerHTML = e.data
     });

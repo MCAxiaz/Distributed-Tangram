@@ -8,6 +8,12 @@ type connectionPool struct {
 	connections map[PlayerID]*rpc.Client
 }
 
+func newConnectionPool() *connectionPool {
+	return &connectionPool{
+		connections: make(map[PlayerID]*rpc.Client),
+	}
+}
+
 func (pool *connectionPool) getConnection(player *Player) (client *rpc.Client, err error) {
 	client, ok := pool.connections[player.ID]
 	if ok {

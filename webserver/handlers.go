@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"../tangram"
@@ -9,6 +10,10 @@ import (
 )
 
 type Message struct {
+	MsgType string `json:"type"`
+}
+
+type OutputMessage struct {
 	MsgType string      `json:"type"`
 	Data    interface{} `json:"data"`
 }
@@ -29,8 +34,10 @@ func (handler *Handler) Handle(conn *websocket.Conn) (err error) {
 	go func() {
 		for {
 			_, msg, err := conn.ReadMessage()
+			log.Printf("[Handle] Inbound Message %s", msg)
 			if err != nil {
 				close(msgChan)
+				return
 			}
 			msgChan <- msg
 		}
@@ -51,27 +58,60 @@ func (handler *Handler) Handle(conn *websocket.Conn) (err error) {
 				log.Println("[Handle] Message Channel closed")
 				return
 			}
-			handler.handleMessage(conn, msg)
+			err = handler.handleMessage(conn, msg)
+			if err != nil {
+				log.Printf("[Handle] Error: %s", err.Error())
+			}
 		}
 	}
 }
 
 func (handler *Handler) handleChange(conn *websocket.Conn) {
 	state := handler.game.GetState()
-	conn.WriteJSON(Message{"state", state})
+	conn.WriteJSON(OutputMessage{"state", state})
 }
 
-func (handler *Handler) handleMessage(conn *websocket.Conn, data []byte) {
+func (handler *Handler) handleMessage(conn *websocket.Conn, data []byte) (err error) {
 	var msg Message
+	err = json.Unmarshal(data, &msg)
+	if err != nil {
+		return
+	}
 
-	json.Unmarshal(data, &msg)
 	switch msg.MsgType {
 	case "GetState":
-		state := handler.game.GetState()
-		conn.WriteJSON(Message{"state", state})
+		err = handler.handleGetState(conn, data)
+	case "ObtainTan":
+		err = handler.handleObtainTan(conn, data)
 	default:
-		log.Println(msg.Data)
+		err = fmt.Errorf("Unsupported Message %s", msg.MsgType)
 	}
+	return
+}
+
+func (handler *Handler) handleGetState(conn *websocket.Conn, data []byte) (err error) {
+	state := handler.game.GetState()
+	err = conn.WriteJSON(OutputMessage{"state", state})
+	return
+}
+
+type ObtainTanMessage struct {
+	Tan tangram.TanID `json:"tan"`
+}
+
+func (handler *Handler) handleObtainTan(conn *websocket.Conn, data []byte) (err error) {
+	var msg ObtainTanMessage
+	err = json.Unmarshal(data, &msg)
+	if err != nil {
+		return
+	}
+	ok, err := handler.game.ObtainTan(msg.Tan)
+	if err != nil {
+		return
+	}
+	// Do something with it?
+	log.Println(ok)
+	return
 }
 
 func handleError(err error) {
