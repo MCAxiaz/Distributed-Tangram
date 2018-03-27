@@ -36,30 +36,44 @@ document.addEventListener("DOMContentLoaded", function (e) {
                     var currentMousePosition = {
                         X: window.event.clientX - startMousePos.X,
                         Y: window.event.clientY - startMousePos.Y,
-                        // R: startMousePos.R
                     };
 
                     path.setAttribute("transform", "translate(" +
                         (currentTanPos.X + currentMousePosition.X) + ", " +
                         (currentTanPos.Y + currentMousePosition.Y)
                         + ") rotate(" + currentTanPos.R + ")");
-                }
+                };
                 path.addEventListener("mousemove", listener);
+
+                // Rotate tan clockwise or counter-clockwise
+                // keyCode: x = 88, z = 90
+                var rotateListener = function (e) {
+                    console.log("rotate");
+                    if (e.keyCode == 88) {
+                        console.log("rotate clockwise");
+                        console.log("key", e.keyCode);
+                        path.setAttribute("transform", "translate(" +
+                            currentTanPos.X + ", " +
+                            currentTanPos.Y
+                            + ") rotate(" + rotateCW(currentTanPos.R) + ")");
+                    } else if (e.keyCode == 90) {
+                        console.log("rotate counterclockwise");
+                        console.log("key", e.keyCode);
+                        path.setAttribute("transform", "translate(" +
+                            currentTanPos.X + ", " +
+                            currentTanPos.Y
+                            + ") rotate(" + rotateCCW(currentTanPos.R) + ")");
+                    }
+                };
+                path.addEventListener("keypress", rotateListener);
 
                 document.addEventListener("mouseup", function(e) {
                     console.log("Releasing tan");
-                    path.removeEventListener("mousemove", listener)
+                    path.removeEventListener("mousemove", listener);
+                    path.removeEventListener("keypress", rotateListener);
                 }, {
                     once:true
-                })
-            });
-
-            path.addEventListener("x", function (e) {
-
-            });
-
-            path.addEventListener("z", function (e) {
-
+                });
             });
         }
     });
@@ -77,4 +91,12 @@ function getMousePosition() {
 function parseTransform(str) {
     var coordinates = str.match(/\d+/g) ? str.match(/\d+/g) : [];
     return {X: parseInt(coordinates[0]), Y: parseInt(coordinates[1]), R: parseInt(coordinates[2])};
+}
+
+function rotateCW(n) {
+    return (n + 5) % 360;
+}
+
+function rotateCCW(n) {
+    return (n - 5) % 360;
 }
