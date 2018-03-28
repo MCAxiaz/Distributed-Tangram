@@ -1,12 +1,12 @@
 function openSocket() {
     var socket = new WebSocket(`ws://${location.host}/ws`);
-    socket.addEventListener("open", function(e) {
-        console.log(`[Socket] Connected to ${this.url}`);
+    socket.addEventListener("open", function (e) {
+        console.log(`[Socket] Connected to ${socket.url}`);
     });
-    socket.addEventListener("message", function(e) {
-        console.log(`[Socket] Message\n${e.data}`);
+    socket.addEventListener("message", function (e) {
+        console.log("[Socket] Message\n", e.data);
     });
-    socket.addEventListener("error", function(e) {
+    socket.addEventListener("error", function (e) {
         console.error(e);
     });
     return socket;
@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
             view.appendChild(tan);
+            tan.addEventListener("mousedown", onMouseDown)
         }
         return tan;
     }
@@ -62,10 +63,12 @@ document.addEventListener("DOMContentLoaded", function(e) {
         case "state":
             state = message.data
             render(state);
+            break;
         case "config":
             config = message.data;
             view.setAttribute("width", config.Size.x)
             view.setAttribute("height", config.Size.y)
+            break;
         }
     });
     socket.addEventListener("open", function(e) {
@@ -73,4 +76,73 @@ document.addEventListener("DOMContentLoaded", function(e) {
             type:"GetState"
         }));
     })
+
+    function onMouseDown(e) {
+        var path = e.target;
+        var id = parseInt(path.id.match(/tan-(\d+)/)[1]);
+        console.log(`Holding on to tan id=${id}`);
+
+        var tan = state.tans.find(function(tan) {
+            return tan.id == id
+        });
+        
+        var startTanPos = {
+            x: tan.location.x,
+            y: tan.location.y,
+            r: tan.rotation
+        }
+
+        var startMousePos = {
+            x: e.clientX,
+            y: e.clientY
+        }
+
+        var mouseMoveListener = function (e) {
+            tan.location.x = startTanPos.x + (e.clientX - startMousePos.x)
+            tan.location.y = startTanPos.y + (e.clientY - startMousePos.y)
+            renderTan(tan, path)
+        };
+        path.addEventListener("mousemove", mouseMoveListener);
+
+        // Rotate tan clockwise or counter-clockwise
+        // keyCode: x = 88, z = 90
+        var rotateListener = function (e) {
+            var key = String.fromCharCode(e.keyCode);
+            switch (key) {
+            case "x":
+                console.log(`[rotate] ${key}`);
+                rotate(tan, 1);
+                break;
+            case "y":
+                rotate(tan, -1);
+                console.log(`[rotate] ${key}`);
+                break;
+            }
+        };
+        path.addEventListener("keypress", rotateListener);
+
+        document.addEventListener("mouseup", function(e) {
+            console.log(`Releasing tan id=${id}`);
+            path.removeEventListener("mousemove", mouseMoveListener);
+            path.removeEventListener("keypress", rotateListener);
+
+            socket.send(JSON.stringify({
+                type: "ObtainTan",
+                tan: id,
+                release: true
+            }))
+        }, {
+            once:true
+        });
+
+        socket.send(JSON.stringify({
+            type: "ObtainTan",
+            tan: id,
+            release: false
+        }))
+    }
 })
+
+function rotate(tan, direction) {
+    tan.rotation = (tan.rotation + direction * 5) % 360
+}

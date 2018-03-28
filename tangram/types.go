@@ -73,5 +73,7 @@ type Player struct {
 // An ID of -1 means nil
 type PlayerID = int
 
+const NO_PLAYER PlayerID = -1
+
 // TanID is the ID of a Tan
 type TanID = uint32

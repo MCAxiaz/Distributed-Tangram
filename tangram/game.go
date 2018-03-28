@@ -82,6 +82,7 @@ func initState(config *GameConfig, player *Player) (state *GameState) {
 	for i, tan := range config.Tans {
 		state.Tans[i] = new(Tan)
 		*state.Tans[i] = *tan
+		state.Tans[i].Player = NO_PLAYER
 	}
 
 	state.Players = make([]*Player, 1)
@@ -163,12 +164,17 @@ func (game *Game) syncTime(player *Player) (err error) {
 // ObtainTan tries to gain control of the specified Tan
 // This function blocks until the Tan is confirmed to be controlled
 // This function is NOT guaranteed thread safe
-func (game *Game) ObtainTan(id TanID) (ok bool, err error) {
+func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 	log.Printf("[ObtainTan] ID = %d\n", id)
 	tan := game.state.getTan(id)
 	if tan == nil {
 		err = fmt.Errorf("[ObtainTan] Requested tan ID = %d is not found", id)
 		return
+	}
+
+	playerID := game.node.player.ID
+	if release {
+		playerID = NO_PLAYER
 	}
 
 	time := tan.Clock.Increment()
@@ -195,7 +201,7 @@ func (game *Game) ObtainTan(id TanID) (ok bool, err error) {
 				okChan <- true
 			}
 			okChan <- ok
-		}(client, game.node.player.ID)
+		}(client, playerID)
 		n++
 	}
 	log.Printf("[ObtainTan] ID = %d. %d peer responses expected\n", id, n)
@@ -210,7 +216,7 @@ func (game *Game) ObtainTan(id TanID) (ok bool, err error) {
 		}
 	}
 
-	tan.Player = game.node.player.ID
+	tan.Player = playerID
 	return
 }
 
