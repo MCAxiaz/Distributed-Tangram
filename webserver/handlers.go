@@ -110,13 +110,13 @@ func (handler *Handler) handleObtainTan(conn *websocket.Conn, data []byte) (err 
 	if err != nil {
 		return
 	}
-	ok, err := handler.game.ObtainTan(msg.Tan, msg.Release)
+	_, err = handler.game.ObtainTan(msg.Tan, msg.Release)
 	if err != nil {
 		return
 	}
 	// Do something with it?
 	// TODO signal failure
-	log.Println(ok)
+	// log.Println(ok)
 	return
 }
 
@@ -132,10 +132,10 @@ func (handler *Handler) handleMoveTan(conn *websocket.Conn, data []byte) (err er
 	if err != nil {
 		return
 	}
-	ok, err := handler.game.MoveTan(msg.Tan, msg.Location, msg.Rotation)
+	_, err = handler.game.MoveTan(msg.Tan, msg.Location, msg.Rotation)
 	// Do something with it?
 	// TODO signal failure
-	log.Println(ok)
+	// log.Println(ok)
 	return
 }
 

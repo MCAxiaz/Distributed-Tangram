@@ -24,8 +24,9 @@ type ConnectRequest struct {
 }
 
 type ConnectResponse struct {
-	state  *GameState
-	config *GameConfig
+	State  *GameState
+	Config *GameConfig
+	Player *Player
 }
 
 // LockTanRequest is request argument for Node.Connect
@@ -63,7 +64,7 @@ func startNode(localAddr string) (node *Node, err error) {
 	server := rpc.NewServer()
 	server.Register(node)
 	go server.Accept(inbound)
-	log.Println("Listening on ", localAddr)
+	log.Printf("Listening on %s as %d\n", localAddr, node.player.ID)
 	return
 }
 
@@ -86,7 +87,7 @@ func (node *Node) Connect(req *ConnectRequest, res *ConnectResponse) (err error)
 
 	node.game.state.Players = append(node.game.state.Players, &req.Player)
 
-	*res = ConnectResponse{node.game.state, node.game.config}
+	*res = ConnectResponse{node.game.GetState(), node.game.GetConfig(), node.player}
 	return
 }
 
@@ -104,12 +105,14 @@ func (node *Node) GetTime(req int, res *time.Duration) (err error) {
 
 // LockTan locks the tan according to request
 func (node *Node) LockTan(req LockTanRequest, ok *bool) (err error) {
+	log.Println("[Node.LockTan]")
 	*ok, err = node.game.lockTan(req.Tan, req.Player, req.Time)
 	return
 }
 
 // MoveTan moves the tan according to request
 func (node *Node) MoveTan(req MoveTanRequest, ok *bool) (err error) {
+	log.Println("[Node.Move]")
 	*ok, err = node.game.moveTan(req.Tan, req.Location, req.Rotation, req.Time)
 	return
 }

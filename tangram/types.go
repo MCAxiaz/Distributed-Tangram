@@ -41,7 +41,7 @@ type Tan struct {
 	Player   PlayerID      `json:"player"`
 	Location Point         `json:"location"`
 	Rotation Rotation      `json:"rotation"`
-	Clock    lamport.Clock `json:"-"`
+	Clock    lamport.Clock `json:"clock"`
 }
 
 // Shape contains information to create an SVG string.

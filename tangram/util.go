@@ -8,3 +8,12 @@ func (state *GameState) getTan(id TanID) *Tan {
 	}
 	return nil
 }
+
+func (state *GameState) getPlayer(id PlayerID) *Player {
+	for _, player := range state.Players {
+		if player.ID == id {
+			return player
+		}
+	}
+	return nil
+}

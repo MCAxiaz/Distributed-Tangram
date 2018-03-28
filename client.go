@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
+	"time"
 
 	"./tangram"
 	"./webserver"
@@ -20,10 +22,12 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("usage: go run client.go [address]")
+	if len(os.Args) != 2 && len(os.Args) != 4 {
+		fmt.Println("usage: go run client.go [address] [-c remote-address]")
 		return
 	}
+
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	addr := os.Args[1]
 
@@ -31,10 +35,13 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	// config.Size = tangram.Point{X: 800, Y: 800}
-	// config.Tans = make([]*tangram.Tan, 0)
-	// config.Target = make([]*tangram.Tan, 0)
-	game, err := tangram.NewGame(config, ":0")
+	var game *tangram.Game
+	if len(os.Args) == 2 {
+		game, err = tangram.NewGame(config, ":0")
+	} else {
+		remoteAddr := os.Args[3]
+		game, err = tangram.ConnectToGame(remoteAddr, ":0")
+	}
 
 	if err != nil {
 		log.Fatalln(err)
