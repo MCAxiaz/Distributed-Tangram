@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +10,7 @@ import (
 	"os"
 
 	"./tangram"
+	"./webserver"
 	"github.com/gorilla/websocket"
 )
 
@@ -63,56 +63,15 @@ func readConfig() (config *tangram.GameConfig, err error) {
 }
 
 func getWebSocketHandler(game *tangram.Game) func(http.ResponseWriter, *http.Request) {
+	handler := webserver.NewHandler(game)
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		for {
-			_, _, err := conn.ReadMessage()
-
-			if err != nil {
-				log.Println(err)
-				return
-			}
-
-			state := game.GetState()
-			config := game.GetConfig()
-			svg := render(state, config)
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(svg)); err != nil {
-				log.Println(err)
-				return
-			}
-		}
+		err = handler.Handle(conn)
+		return
 	}
-}
-
-func render(state *tangram.GameState, config *tangram.GameConfig) string {
-	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf(`<svg width="%d" height="%d">`, config.Size.X, config.Size.Y))
-	for _, tan := range state.Tans {
-		buf.WriteString(renderTan(tan))
-	}
-	buf.WriteString(`</svg>`)
-	return buf.String()
-}
-
-func renderTan(tan *tangram.Tan) string {
-	transform := fmt.Sprintf(`translate(%d, %d) rotate(%d)`, tan.Location.X, tan.Location.Y, tan.Rotation)
-
-	var buf bytes.Buffer
-	for i, point := range tan.Shape.Points {
-		command := "L"
-		if i == 0 {
-			command = "M"
-		}
-
-		buf.WriteString(fmt.Sprintf("%s %d %d ", command, point.X, point.Y))
-	}
-	buf.WriteString("Z")
-
-	d := buf.String()
-	path := fmt.Sprintf(`<path fill="%s" stroke="%s" transform="%s" d="%s">`, tan.Shape.Fill, tan.Shape.Stroke, transform, d)
-	return path
 }

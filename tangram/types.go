@@ -13,7 +13,7 @@ import (
 // - Players: It holds the players currently in the game.
 // - Host: The player that is hosting the game.
 type GameState struct {
-	Tans    []*Tan
+	Tans    []*Tan `json:"tans"`
 	Timer   time.Time
 	Players []*Player
 	Host    *Player
@@ -36,12 +36,12 @@ type GameConfig struct {
 // - Rotation: Alignment of tan in increments of 5 degrees
 // - Clock: A logical clock for this tan
 type Tan struct {
-	ID       TanID
-	Shape    *Shape
-	Player   PlayerID
-	Location Point
-	Rotation uint32
-	Clock    lamport.Clock
+	ID       TanID         `json:"id"`
+	Shape    *Shape        `json:"shape"`
+	Player   PlayerID      `json:"player"`
+	Location Point         `json:"location"`
+	Rotation uint32        `json:"rotation"`
+	Clock    lamport.Clock `json:"-"`
 }
 
 // Shape contains information to create an SVG string.
@@ -50,15 +50,15 @@ type Tan struct {
 // - and the coordinate of the points would be based on the fact that the centre of the shape is (0, 0).
 // - The points are ordered in a clockwise fashion.
 type Shape struct {
-	Points []Point // Points using centre point of shape (location field of Tan) as origin.
-	Fill   string
-	Stroke string
+	Points []Point `json:"points"` // Points using centre point of shape (location field of Tan) as origin.
+	Fill   string  `json:"fill"`
+	Stroke string  `json:"stroke"`
 }
 
 // Point is a struct containing a pair of x and y coordinates.
 type Point struct {
-	X int32
-	Y int32
+	X int32 `json:"x"`
+	Y int32 `json:"y"`
 }
 
 // Player is a struct that holds player information.

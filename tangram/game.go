@@ -15,7 +15,7 @@ type Game struct {
 	config      *GameConfig
 	node        *Node
 	pool        *connectionPool
-	subscribers []*chan bool
+	subscribers []chan bool
 }
 
 // NewGame starts a new Game
@@ -33,8 +33,8 @@ func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
 		state:       state,
 		config:      config,
 		node:        node,
-		pool:        new(connectionPool),
-		subscribers: make([]*chan bool, 0),
+		pool:        newConnectionPool(),
+		subscribers: make([]chan bool, 0),
 	}
 
 	node.game = game
@@ -65,8 +65,8 @@ func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
 		state:       state,
 		config:      config,
 		node:        node,
-		pool:        new(connectionPool),
-		subscribers: make([]*chan bool, 0),
+		pool:        newConnectionPool(),
+		subscribers: make([]chan bool, 0),
 	}
 
 	go game.syncTime(state.Players[0])
@@ -90,10 +90,28 @@ func initState(config *GameConfig, player *Player) (state *GameState) {
 }
 
 // Subscribe returns a channel that outputs a value when the game state is updated
-func (game *Game) Subscribe() *chan bool {
+func (game *Game) Subscribe() chan bool {
 	channel := make(chan bool, 1)
-	game.subscribers = append(game.subscribers, &channel)
-	return &channel
+	game.subscribers = append(game.subscribers, channel)
+	return channel
+}
+
+func (game *Game) Unsubscribe(s chan bool) {
+	index := -1
+	for i, subscriber := range game.subscribers {
+		if subscriber == s {
+			close(subscriber)
+			index = i
+			break
+		}
+	}
+
+	if index < 0 {
+		panic("Channel not found")
+	}
+
+	game.subscribers[index] = game.subscribers[len(game.subscribers)-1]
+	game.subscribers = game.subscribers[:len(game.subscribers)-1]
 }
 
 // GetState retrieves the current state of the board
@@ -146,6 +164,7 @@ func (game *Game) syncTime(player *Player) (err error) {
 // This function blocks until the Tan is confirmed to be controlled
 // This function is NOT guaranteed thread safe
 func (game *Game) ObtainTan(id TanID) (ok bool, err error) {
+	log.Printf("[ObtainTan] ID = %d\n", id)
 	tan := game.state.getTan(id)
 	if tan == nil {
 		err = fmt.Errorf("[ObtainTan] Requested tan ID = %d is not found", id)
@@ -158,6 +177,10 @@ func (game *Game) ObtainTan(id TanID) (ok bool, err error) {
 	n := 0
 	okChan := make(chan bool, len(game.state.Players))
 	for _, player := range game.state.Players {
+		if player.ID == game.node.player.ID {
+			continue
+		}
+
 		client, err := game.pool.getConnection(player)
 		// TODO handle error properly
 		if err != nil {
@@ -175,14 +198,19 @@ func (game *Game) ObtainTan(id TanID) (ok bool, err error) {
 		}(client, game.node.player.ID)
 		n++
 	}
+	log.Printf("[ObtainTan] ID = %d. %d peer responses expected\n", id, n)
 
 	// We expect n confirmations
+	ok = true
 	for ; n > 0; n-- {
 		ok = <-okChan
+		log.Printf("[ObtainTan] ID = %d. Got response. %d more responses expected\n", id, n)
 		if !ok {
 			return
 		}
 	}
+
+	tan.Player = game.node.player.ID
 	return
 }
 
