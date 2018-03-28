@@ -101,6 +101,12 @@ document.addEventListener("DOMContentLoaded", function(e) {
             tan.location.x = startTanPos.x + (e.clientX - startMousePos.x);
             tan.location.y = startTanPos.y + (e.clientY - startMousePos.y);
             renderTan(tan, path);
+            socket.send(JSON.stringify({
+                type: "MoveTan",
+                tan: tan.id,
+                location: tan.location,
+                rotation: tan.rotation
+            }));
         };
         document.addEventListener("mousemove", mouseMoveListener);
 
@@ -122,6 +128,12 @@ document.addEventListener("DOMContentLoaded", function(e) {
                 tan.rotation = rotate(tan.rotation, d);
                 renderTan(tan, path);
             }
+            socket.send(JSON.stringify({
+                type: "MoveTan",
+                tan: tan.id,
+                location: tan.location,
+                rotation: tan.rotation
+            }));
         };
         document.addEventListener("keypress", rotateListener);
 

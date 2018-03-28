@@ -40,7 +40,7 @@ type Tan struct {
 	Shape    *Shape        `json:"shape"`
 	Player   PlayerID      `json:"player"`
 	Location Point         `json:"location"`
-	Rotation uint32        `json:"rotation"`
+	Rotation Rotation      `json:"rotation"`
 	Clock    lamport.Clock `json:"-"`
 }
 
@@ -77,3 +77,5 @@ const NO_PLAYER PlayerID = -1
 
 // TanID is the ID of a Tan
 type TanID = uint32
+
+type Rotation = uint32
