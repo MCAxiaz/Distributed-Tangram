@@ -160,5 +160,5 @@ document.addEventListener("DOMContentLoaded", function(e) {
 })
 
 function rotate(r, d) {
-    return (r + d * 5) % 360;
+    return (r + d * 5 + 720) % 360;
 }
