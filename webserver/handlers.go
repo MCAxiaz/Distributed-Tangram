@@ -98,7 +98,8 @@ func (handler *Handler) handleGetState(conn *websocket.Conn, data []byte) (err e
 }
 
 type ObtainTanMessage struct {
-	Tan tangram.TanID `json:"tan"`
+	Tan     tangram.TanID `json:"tan"`
+	Release bool          `json:"release"`
 }
 
 func (handler *Handler) handleObtainTan(conn *websocket.Conn, data []byte) (err error) {
@@ -107,11 +108,12 @@ func (handler *Handler) handleObtainTan(conn *websocket.Conn, data []byte) (err 
 	if err != nil {
 		return
 	}
-	ok, err := handler.game.ObtainTan(msg.Tan)
+	ok, err := handler.game.ObtainTan(msg.Tan, msg.Release)
 	if err != nil {
 		return
 	}
 	// Do something with it?
+	// TODO signal failure
 	log.Println(ok)
 	return
 }
