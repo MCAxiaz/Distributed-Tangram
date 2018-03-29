@@ -27,6 +27,7 @@ function renderTan(model, node) {
     node.setAttribute('stroke', model.shape.stroke);
     node.setAttribute('transform', transform);
     node.setAttribute('d', d);
+    node.setAttribute('class', 'draggable');
     return node
 }
 
@@ -43,7 +44,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
             view.appendChild(tan);
-            tan.addEventListener("mousedown", onMouseDown)
+            tan.addEventListener("pointerdown", onMouseDown)
         }
         return tan;
     }
@@ -108,7 +109,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
                 rotation: tan.rotation
             }));
         };
-        document.addEventListener("mousemove", mouseMoveListener);
+        document.addEventListener("pointermove", mouseMoveListener);
 
         // Rotate tan clockwise or counter-clockwise
         // keyCode: x = 88, z = 90
@@ -137,9 +138,9 @@ document.addEventListener("DOMContentLoaded", function(e) {
         };
         document.addEventListener("keypress", rotateListener);
 
-        document.addEventListener("mouseup", function(e) {
+        document.addEventListener("pointerup", function(e) {
             console.log(`Releasing tan id=${id}`);
-            document.removeEventListener("mousemove", mouseMoveListener);
+            document.removeEventListener("pointermove", mouseMoveListener);
             document.removeEventListener("keypress", rotateListener);
 
             socket.send(JSON.stringify({
