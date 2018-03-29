@@ -12,8 +12,8 @@
                     { "x": 0, "y": 50 },
                     { "x": 100, "y": -50 }
                 ],
-                "fill": "green",
-                "stroke": "black"
+                "fill": "#4fdbbf",
+                "stroke": "#10676c"
             },
             "location": { "x": 100, "y": 50 }
         },
@@ -25,8 +25,8 @@
                     { "x": 50, "y": 0 },
                     { "x": -50, "y": 100 }
                 ],
-                "fill": "yellow",
-                "stroke": "black"
+                "fill": "#6a6ef0",
+                "stroke": "#373a90"
             },
             "location": { "x": 50, "y": 100 }
         },
@@ -38,8 +38,8 @@
                     { "x": -25, "y": 0 },
                     { "x": 25, "y": 50 }
                 ],
-                "fill": "blue",
-                "stroke": "black"
+                "fill": "#ef8ece",
+                "stroke": "#9d2a76"
             },
             "location": { "x": 175, "y": 50 }
         },
@@ -52,8 +52,8 @@
                     { "x": 0, "y": 50 },
                     { "x": 50, "y": 0 }
                 ],
-                "fill": "red",
-                "stroke": "black"
+                "fill": "#dfd780",
+                "stroke": "#946c21"
             },
             "location": { "x": 150, "y": 100 }
         },
@@ -65,8 +65,8 @@
                     { "x": -50, "y": 25 },
                     { "x": 50, "y": 25 }
                 ],
-                "fill": "cyan",
-                "stroke": "black"
+                "fill": "#ce93fc",
+                "stroke": "#4f2977"
             },
             "location": { "x": 100, "y": 125 }
         },
@@ -79,8 +79,8 @@
                     { "x": 25, "y": 25 },
                     { "x": 75, "y": -25 }
                 ],
-                "fill": "purple",
-                "stroke": "black"
+                "fill": "#78e77b",
+                "stroke": "#296b12"
             },
             "location": { "x": 75, "y": 175 }
         },
@@ -92,8 +92,8 @@
                     { "x": -75, "y": 25 },
                     { "x": 25, "y": 25 }
                 ],
-                "fill": "orange",
-                "stroke": "black"
+                "fill": "#f39f8c",
+                "stroke": "#8f3723"
             },
             "location": { "x": 175, "y": 175 }
         }
