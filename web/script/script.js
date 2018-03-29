@@ -113,13 +113,13 @@ document.addEventListener("DOMContentLoaded", function(e) {
         // Rotate tan clockwise or counter-clockwise
         // keyCode: x = 88, z = 90
         var rotateListener = function (e) {
-            var key = String.fromCharCode(e.keyCode);
+            var key = e.code;
             var d = 0;
             switch (key) {
-            case "x":
+            case "KeyX":
                 d = 1;
                 break;
-            case "z":
+            case "KeyZ":
                 d = -1
                 break;
             }
@@ -160,5 +160,5 @@ document.addEventListener("DOMContentLoaded", function(e) {
 })
 
 function rotate(r, d) {
-    return (r + d * 5) % 360;
+    return (r + d * 5 + 720) % 360;
 }
