@@ -3,12 +3,13 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
+	"strconv"
 	"time"
 
 	"./tangram"
@@ -22,25 +23,29 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
-	if len(os.Args) != 2 && len(os.Args) != 4 {
-		fmt.Println("usage: go run client.go [address] [-c remote-address]")
+	remoteAddr := flag.String("c", "", "remote client to connect to")
+	localRPCAddr := flag.Int("p", 0, "address to expose")
+
+	flag.Parse()
+
+	if len(flag.Args()) == 0 {
+		fmt.Println("usage: go run client.go [-c remote-address] [-p rpc-port] [address]")
 		return
 	}
 
-	rand.Seed(time.Now().UTC().UnixNano())
+	addr := flag.Args()[0]
 
-	addr := os.Args[1]
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	config, err := readConfig()
 	if err != nil {
 		log.Fatalln(err)
 	}
 	var game *tangram.Game
-	if len(os.Args) == 2 {
-		game, err = tangram.NewGame(config, ":0")
+	if *remoteAddr == "" {
+		game, err = tangram.NewGame(config, ":"+strconv.Itoa(*localRPCAddr))
 	} else {
-		remoteAddr := os.Args[3]
-		game, err = tangram.ConnectToGame(remoteAddr, ":0")
+		game, err = tangram.ConnectToGame(*remoteAddr, ":"+strconv.Itoa(*localRPCAddr))
 	}
 
 	if err != nil {
