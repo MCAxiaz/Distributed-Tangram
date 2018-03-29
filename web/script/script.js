@@ -83,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             var d = Date.now() - new Date(state.Timer).getTime()
             timer.innerHTML = Math.round(d / 1000)
         }
-    }, 500)
+    }, 100)
 
     function onMouseDown(e) {
         var path = e.target;
