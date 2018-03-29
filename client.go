@@ -28,7 +28,7 @@ func main() {
 
 	flag.Parse()
 
-	if len(flag.Args()) == 0 {
+	if len(flag.Args()) != 1 {
 		fmt.Println("usage: go run client.go [-c remote-address] [-p rpc-port] [address]")
 		return
 	}
