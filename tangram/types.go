@@ -40,8 +40,8 @@ type Tan struct {
 	Shape    *Shape        `json:"shape"`
 	Player   PlayerID      `json:"player"`
 	Location Point         `json:"location"`
-	Rotation uint32        `json:"rotation"`
-	Clock    lamport.Clock `json:"-"`
+	Rotation Rotation      `json:"rotation"`
+	Clock    lamport.Clock `json:"clock"`
 }
 
 // Shape contains information to create an SVG string.
@@ -77,3 +77,5 @@ const NO_PLAYER PlayerID = -1
 
 // TanID is the ID of a Tan
 type TanID = uint32
+
+type Rotation = uint32

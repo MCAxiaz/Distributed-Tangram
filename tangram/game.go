@@ -58,8 +58,8 @@ func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
 		return
 	}
 
-	config := res.config
-	state := res.state
+	config := res.Config
+	state := initState(config, node.player)
 
 	game = &Game{
 		state:       state,
@@ -68,8 +68,10 @@ func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
 		pool:        newConnectionPool(),
 		subscribers: make([]chan bool, 0),
 	}
+	node.game = game
 
-	go game.syncTime(state.Players[0])
+	game.witnessState(res.State)
+	game.syncTime(state.getPlayer(res.Player.ID))
 	return
 }
 
@@ -113,6 +115,15 @@ func (game *Game) Unsubscribe(s chan bool) {
 
 	game.subscribers[index] = game.subscribers[len(game.subscribers)-1]
 	game.subscribers = game.subscribers[:len(game.subscribers)-1]
+}
+
+func (game *Game) notify() {
+	for _, sub := range game.subscribers {
+		select {
+		case sub <- true:
+		default:
+		}
+	}
 }
 
 // GetState retrieves the current state of the board
@@ -195,9 +206,10 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 
 		go func(client *rpc.Client, player PlayerID) {
 			var ok bool
-			client.Call("Node.LockTan", LockTanRequest{id, player, time}, ok)
+			client.Call("Node.LockTan", LockTanRequest{id, player, time}, &ok)
 			// TODO handle error properly?
 			if err != nil {
+				log.Println(err.Error())
 				okChan <- true
 			}
 			okChan <- ok
@@ -208,15 +220,53 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 
 	// We expect n confirmations
 	ok = true
-	for ; n > 0; n-- {
+	for n > 0 {
 		ok = <-okChan
-		log.Printf("[ObtainTan] ID = %d. Got response. %d more responses expected\n", id, n)
+		n--
+		log.Printf("[ObtainTan] ID = %d. Got response %t. %d more responses expected\n", id, ok, n)
 		if !ok {
 			return
 		}
 	}
 
 	tan.Player = playerID
+	game.notify()
+	return
+}
+
+func (game *Game) MoveTan(id TanID, location Point, rotation Rotation) (ok bool, err error) {
+	// log.Printf("[MoveTan] ID = %d\n", id)
+	tan := game.state.getTan(id)
+	if tan == nil {
+		err = fmt.Errorf("[ObtainTan] Requested tan ID = %d is not found", id)
+		return
+	}
+
+	time := tan.Clock.Increment()
+	tan.Location = location
+	tan.Rotation = rotation
+	ok = true
+
+	// Let everyone know!
+	for _, player := range game.state.Players {
+		if player.ID == game.node.player.ID {
+			continue
+		}
+
+		client, err := game.pool.getConnection(player)
+		// TODO handle error properly
+		if err != nil {
+			log.Println(err.Error())
+			continue
+		}
+
+		go func(client *rpc.Client) {
+			var ok bool
+			client.Call("Node.MoveTan", MoveTanRequest{id, location, rotation, time}, &ok)
+		}(client)
+	}
+
+	game.notify()
 	return
 }
 
@@ -232,5 +282,53 @@ func (game *Game) lockTan(tanID TanID, playerID PlayerID, time lamport.Time) (ok
 	if ok {
 		tan.Player = playerID
 	}
+
+	game.notify()
 	return
+}
+
+func (game *Game) moveTan(tanID TanID, location Point, rotation Rotation, time lamport.Time) (ok bool, err error) {
+	tan := game.state.getTan(tanID)
+	if tan == nil {
+		err = fmt.Errorf("[moveTan] Requested tan ID = %d is not found", tanID)
+		return
+	}
+
+	ok = tan.Clock.Witness(time)
+	if ok {
+		tan.Location = location
+		tan.Rotation = rotation
+	}
+
+	game.notify()
+	return
+}
+
+func (game *Game) witnessTan(newTan *Tan) {
+	tan := game.state.getTan(newTan.ID)
+	if tan == nil {
+		log.Printf("[witnessTan] Witnessed ghost ID = %d\n", newTan.ID)
+		return
+	}
+
+	ok := tan.Clock.Witness(newTan.Clock.Time())
+	log.Printf("[witnessTan] Witness ID = %d, ok = %t\n", tan.ID, ok)
+	if ok {
+		tan.Location = newTan.Location
+		tan.Rotation = newTan.Rotation
+		tan.Player = newTan.Player
+	}
+}
+
+func (game *Game) witnessState(state *GameState) {
+	for _, tan := range state.Tans {
+		game.witnessTan(tan)
+	}
+	for _, player := range state.Players {
+		if game.state.getPlayer(player.ID) != nil {
+			continue
+		}
+		log.Printf("[witnessState] Adding Player %d", player.ID)
+		game.state.Players = append(game.state.Players, player)
+	}
 }

@@ -24,8 +24,9 @@ type ConnectRequest struct {
 }
 
 type ConnectResponse struct {
-	state  *GameState
-	config *GameConfig
+	State  *GameState
+	Config *GameConfig
+	Player *Player
 }
 
 // LockTanRequest is request argument for Node.Connect
@@ -33,6 +34,13 @@ type LockTanRequest struct {
 	Tan    TanID
 	Player PlayerID
 	Time   lamport.Time
+}
+
+type MoveTanRequest struct {
+	Tan      TanID
+	Location Point
+	Rotation Rotation
+	Time     lamport.Time
 }
 
 // startNode instantiates the RPC server which will allow for communication between client nodes
@@ -56,7 +64,7 @@ func startNode(localAddr string) (node *Node, err error) {
 	server := rpc.NewServer()
 	server.Register(node)
 	go server.Accept(inbound)
-	log.Println("Listening on ", localAddr)
+	log.Printf("Listening on %s as %d\n", localAddr, node.player.ID)
 	return
 }
 
@@ -70,7 +78,7 @@ func newPlayer(addr string) (player *Player) {
 // RPC
 
 // Connect connects to a node with the new player's information
-func (node *Node) Connect(req *ConnectRequest, res *GameConfig) (err error) {
+func (node *Node) Connect(req *ConnectRequest, res *ConnectResponse) (err error) {
 	for _, player := range node.game.state.Players {
 		if req.Player.ID == player.ID {
 			return fmt.Errorf("Player ID = %d is already in the game", player.ID)
@@ -79,7 +87,7 @@ func (node *Node) Connect(req *ConnectRequest, res *GameConfig) (err error) {
 
 	node.game.state.Players = append(node.game.state.Players, &req.Player)
 
-	*res = *node.game.config
+	*res = ConnectResponse{node.game.GetState(), node.game.GetConfig(), node.player}
 	return
 }
 
@@ -97,6 +105,14 @@ func (node *Node) GetTime(req int, res *time.Duration) (err error) {
 
 // LockTan locks the tan according to request
 func (node *Node) LockTan(req LockTanRequest, ok *bool) (err error) {
+	log.Println("[Node.LockTan]")
 	*ok, err = node.game.lockTan(req.Tan, req.Player, req.Time)
+	return
+}
+
+// MoveTan moves the tan according to request
+func (node *Node) MoveTan(req MoveTanRequest, ok *bool) (err error) {
+	log.Println("[Node.Move]")
+	*ok, err = node.game.moveTan(req.Tan, req.Location, req.Rotation, req.Time)
 	return
 }

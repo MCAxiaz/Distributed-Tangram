@@ -85,6 +85,8 @@ func (handler *Handler) handleMessage(conn *websocket.Conn, data []byte) (err er
 		err = handler.handleGetState(conn, data)
 	case "ObtainTan":
 		err = handler.handleObtainTan(conn, data)
+	case "MoveTan":
+		err = handler.handleMoveTan(conn, data)
 	default:
 		err = fmt.Errorf("Unsupported Message %s", msg.MsgType)
 	}
@@ -108,13 +110,32 @@ func (handler *Handler) handleObtainTan(conn *websocket.Conn, data []byte) (err 
 	if err != nil {
 		return
 	}
-	ok, err := handler.game.ObtainTan(msg.Tan, msg.Release)
+	_, err = handler.game.ObtainTan(msg.Tan, msg.Release)
 	if err != nil {
 		return
 	}
 	// Do something with it?
 	// TODO signal failure
-	log.Println(ok)
+	// log.Println(ok)
+	return
+}
+
+type MoveTanMessage struct {
+	Tan      tangram.TanID    `json:"tan"`
+	Location tangram.Point    `json:"location"`
+	Rotation tangram.Rotation `json:"rotation"`
+}
+
+func (handler *Handler) handleMoveTan(conn *websocket.Conn, data []byte) (err error) {
+	var msg MoveTanMessage
+	err = json.Unmarshal(data, &msg)
+	if err != nil {
+		return
+	}
+	_, err = handler.game.MoveTan(msg.Tan, msg.Location, msg.Rotation)
+	// Do something with it?
+	// TODO signal failure
+	// log.Println(ok)
 	return
 }
 

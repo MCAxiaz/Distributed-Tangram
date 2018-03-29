@@ -101,19 +101,25 @@ document.addEventListener("DOMContentLoaded", function(e) {
             tan.location.x = startTanPos.x + (e.clientX - startMousePos.x);
             tan.location.y = startTanPos.y + (e.clientY - startMousePos.y);
             renderTan(tan, path);
+            socket.send(JSON.stringify({
+                type: "MoveTan",
+                tan: tan.id,
+                location: tan.location,
+                rotation: tan.rotation
+            }));
         };
         document.addEventListener("mousemove", mouseMoveListener);
 
         // Rotate tan clockwise or counter-clockwise
         // keyCode: x = 88, z = 90
         var rotateListener = function (e) {
-            var key = String.fromCharCode(e.keyCode);
+            var key = e.code;
             var d = 0;
             switch (key) {
-            case "x":
+            case "KeyX":
                 d = 1;
                 break;
-            case "z":
+            case "KeyZ":
                 d = -1
                 break;
             }
@@ -122,6 +128,12 @@ document.addEventListener("DOMContentLoaded", function(e) {
                 tan.rotation = rotate(tan.rotation, d);
                 renderTan(tan, path);
             }
+            socket.send(JSON.stringify({
+                type: "MoveTan",
+                tan: tan.id,
+                location: tan.location,
+                rotation: tan.rotation
+            }));
         };
         document.addEventListener("keypress", rotateListener);
 
@@ -148,5 +160,5 @@ document.addEventListener("DOMContentLoaded", function(e) {
 })
 
 function rotate(r, d) {
-    return (r + d * 5) % 360;
+    return (r + d * 5 + 720) % 360;
 }
