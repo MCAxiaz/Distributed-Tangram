@@ -31,6 +31,25 @@ function renderTan(model, node) {
     return node
 }
 
+function renderTargetTan(model, node) {
+    //var transform = `translate(${model.location.x + 300}, ${model.location.y + 50}) rotate(${model.rotation})`;
+    var transform = `translate(${model.location.x}, ${model.location.y}) rotate(${model.rotation})`;
+    var d = "";
+    model.shape.points.forEach(function(point, i) {
+        var command = i == 0 ? "M" : "L";
+        d += `${command} ${point.x} ${point.y} `;
+    });
+    d += "Z";
+
+    node.setAttribute('fill', 'grey');
+    node.setAttribute('stroke', 'grey');
+    node.setAttribute('stroke-width', 2);
+    node.setAttribute('stroke-linejoin', 'round');
+    node.setAttribute('transform', transform);
+    node.setAttribute('d', d);
+    return node
+}
+
 var socket;
 var config;
 var state;
@@ -57,6 +76,14 @@ document.addEventListener("DOMContentLoaded", function(e) {
         }
     }
 
+    function renderTarget(config) {
+      for (let ttan of config.target) {
+        let node = document.createElementNS(view.namespaceURI, "path");
+        renderTargetTan(ttan, node)
+        view.appendChild(node);
+      }
+    }
+
     socket = openSocket();
     socket.addEventListener("message", function(e) {
         dump.innerHTML = e.data
@@ -70,6 +97,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             config = message.data;
             view.setAttribute("width", config.Size.x)
             view.setAttribute("height", config.Size.y)
+            renderTarget(config);
             break;
         }
     });
@@ -169,5 +197,5 @@ document.addEventListener("DOMContentLoaded", function(e) {
 })
 
 function rotate(r, d) {
-    return (r + d * 5 + 720) % 360;
+    return (r + d * 15 + 720) % 360;
 }

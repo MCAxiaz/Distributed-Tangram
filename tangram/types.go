@@ -25,7 +25,7 @@ type GameState struct {
 type GameConfig struct {
 	Size   Point
 	Tans   []*Tan
-	Target []*Tan
+	Target []*TargetTan `json:"target"`
 }
 
 // Tan is a struct that holds the following information:
@@ -36,12 +36,27 @@ type GameConfig struct {
 // - Rotation: Alignment of tan in increments of 5 degrees
 // - Clock: A logical clock for this tan
 type Tan struct {
-	ID       TanID         `json:"id"`
-	Shape    *Shape        `json:"shape"`
-	Player   PlayerID      `json:"player"`
-	Location Point         `json:"location"`
-	Rotation Rotation      `json:"rotation"`
-	Clock    lamport.Clock `json:"clock"`
+	ID        TanID         `json:"id"`
+	Shape     *Shape        `json:"shape"`
+	ShapeType ShapeType     `json:"type"`
+	Player    PlayerID      `json:"player"`
+	Location  Point         `json:"location"`
+	Rotation  Rotation      `json:"rotation"`
+	Clock     lamport.Clock `json:"clock"`
+}
+
+// Tan is a struct that holds the following information:
+// - ID: The ID of the tan
+// - Shape: The shape of the tan
+// - Player: The ID of the player controlling the tan
+// - Location: The location of the tan on a canvas
+// - Rotation: Alignment of tan in increments of 5 degrees
+// - Clock: A logical clock for this tan
+type TargetTan struct {
+	Shape     *Shape    `json:"shape"`
+	ShapeType ShapeType `json:"type"`
+	Location  Point     `json:"location"`
+	Rotation  Rotation  `json:"rotation"`
 }
 
 // Shape contains information to create an SVG string.
@@ -74,6 +89,19 @@ type PlayerID = int
 
 // NoPlayer is the PlayerID of an uncontrolled tan
 const NoPlayer PlayerID = -1
+
+// ShapeType is the type of a Tan or Solution Tan
+
+type ShapeType string
+
+const (
+	LTri  ShapeType = "LTri"
+	MTri            = "MTri" // Matches a Mid-sized Triangle or two Small Triangles
+	STri            = "STri"
+	Cube            = "Cube"  // Matches a Cube or two Small Triangles
+	Pgram           = "Pgram" // Matches a Parallelogram or two Small Triangles
+
+)
 
 // TanID is the ID of a Tan
 type TanID = uint32
