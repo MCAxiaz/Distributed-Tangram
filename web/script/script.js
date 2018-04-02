@@ -189,6 +189,8 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return tan.id == id
         });
 
+        // TODO: The player name used here is incorrect.
+        // Is there a data structure on the frontend that stores the player who is playing the game on that node?
         var locked = lockTan(tan.id, tan.playerName);
         if (!locked) {
             return;
