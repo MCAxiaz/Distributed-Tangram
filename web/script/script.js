@@ -37,6 +37,12 @@ document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
     var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
+    // TODO: Find some way to get the bounds of the canvas without hardcoding.
+    // Send the bounds from the backend.
+    var canvasBounds = {
+        x: 800,
+        y: 600
+    };
 
     function getTan(model) {
         var tan = view.getElementById(`tan-${model.id}`);
@@ -106,8 +112,8 @@ document.addEventListener("DOMContentLoaded", function(e) {
         };
 
         var mouseMoveListener = function (e) {
-            tan.location.x = startTanPos.x + (e.clientX - startMousePos.x);
-            tan.location.y = startTanPos.y + (e.clientY - startMousePos.y);
+            tan.location.x = Math.max(0, Math.min(startTanPos.x + (e.clientX - startMousePos.x), canvasBounds.x));
+            tan.location.y = Math.max(0, Math.min(startTanPos.y + (e.clientY - startMousePos.y), canvasBounds.y));
             renderTan(tan, path);
             socket.send(JSON.stringify({
                 type: "MoveTan",
