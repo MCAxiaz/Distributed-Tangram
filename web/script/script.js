@@ -24,10 +24,23 @@ function renderTan(model, node) {
     
     node.id = id;
     node.setAttribute('fill', model.shape.fill);
+    node.setAttribute('fill-opacity', '1'); // fill-opacity's value will be halved when tan is possessed
     node.setAttribute('stroke', model.shape.stroke);
     node.setAttribute('transform', transform);
     node.setAttribute('d', d);
+
     return node
+}
+
+function attachPlayerNameOnTan(tan) {
+    var owner = document.createElement("h4");
+    owner.textContent = "";
+    var div = document.createElement("div");
+    div.className = "owner";
+    div.appendChild(owner);
+    tan.appendChild(div);
+
+    return tan;
 }
 
 var socket;
@@ -42,6 +55,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         if (!tan) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
+            attachPlayerNameOnTan(tan);
             view.appendChild(tan);
             tan.addEventListener("mousedown", onMouseDown)
         }
@@ -53,6 +67,56 @@ document.addEventListener("DOMContentLoaded", function(e) {
             let node = getTan(tan);
             renderTan(tan, node);
         }
+    }
+
+    // lockTan objectives
+    // - set player name on tan
+    // - highlight the tan to indicate someone has possession of it
+    function lockTan(tanID, playerName) {
+        var tan = view.getElementById(`tan-${tanID}`);
+        
+        if (!tan) {
+            console.log("You are grabbing a tan that does not exist.");
+            return;
+        }
+
+        // TODO: Check if tan is already locked
+        
+        // Change path's fill opacity to half
+        tan.setAttribute("fill-opacity", "0.5");
+
+        // TODO: Display player name on tan and set it to locked
+        // Look for any indication of a tan being locked on the frontend
+
+        console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${playerName}.`);
+        socket.send(JSON.stringify({
+            type: "LockTan",
+            tan: tan.id,
+            lockTan: true
+        }));
+    }
+
+    function unlockTan(tanID, playerID) {
+        var tan = view.getElementById(`tan-${tanID}`);
+
+        if (!tan) {
+            console.log("Cannot unlock a tan that does not exist.");
+            return;
+        }
+
+        // TODO: Set tan to unlocked
+
+        // Restore path's fill opacity to 1
+        tan.setAttribute("fill-opacity", "1");
+        
+        // TODO: Remove player name from tan
+
+        console.log(`[Unlock tan] ${tanID}`);
+        socket.send(JSON.stringify({
+            type: "LockTan",
+            tan: tan.id,
+            lockTan: false
+        }));
     }
 
     socket = openSocket();
@@ -111,7 +175,6 @@ document.addEventListener("DOMContentLoaded", function(e) {
         document.addEventListener("mousemove", mouseMoveListener);
 
         // Rotate tan clockwise or counter-clockwise
-        // keyCode: x = 88, z = 90
         var rotateListener = function (e) {
             var key = e.code;
             var d = 0;
