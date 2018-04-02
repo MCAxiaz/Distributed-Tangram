@@ -48,6 +48,7 @@ var config;
 var state;
 document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
+    var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
 
     function getTan(model) {
@@ -140,6 +141,13 @@ document.addEventListener("DOMContentLoaded", function(e) {
             type:"GetState"
         }));
     })
+
+    setInterval(function() {
+        if (state) {
+            var d = Date.now() - new Date(state.Timer).getTime()
+            timer.innerHTML = Math.round(d / 1000)
+        }
+    }, 100)
 
     function onMouseDown(e) {
         var path = e.target;

@@ -41,6 +41,7 @@ func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
 	return
 }
 
+// ConnectToGame connects to an existing game at addr
 func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
 	node, err := startNode(localAddr)
 	if err != nil {
@@ -84,7 +85,7 @@ func initState(config *GameConfig, player *Player) (state *GameState) {
 	for i, tan := range config.Tans {
 		state.Tans[i] = new(Tan)
 		*state.Tans[i] = *tan
-		state.Tans[i].Player = NO_PLAYER
+		state.Tans[i].Player = NoPlayer
 	}
 
 	state.Players = make([]*Player, 1)
@@ -99,6 +100,7 @@ func (game *Game) Subscribe() chan bool {
 	return channel
 }
 
+// Unsubscribe takes a channel reutrned by Subscribe() and remove & close it
 func (game *Game) Unsubscribe(s chan bool) {
 	index := -1
 	for i, subscriber := range game.subscribers {
@@ -136,6 +138,7 @@ func (game *Game) GetTime() time.Duration {
 	return time.Now().Sub(game.state.Timer)
 }
 
+// GetConfig returns the config of the game
 func (game *Game) GetConfig() *GameConfig {
 	return game.config
 }
@@ -185,7 +188,7 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 
 	playerID := game.node.player.ID
 	if release {
-		playerID = NO_PLAYER
+		playerID = NoPlayer
 	}
 
 	time := tan.Clock.Increment()
@@ -234,6 +237,8 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 	return
 }
 
+// MoveTan changes the location of a Tan
+// MoveTan does not block and broadcasts the content asynchronously
 func (game *Game) MoveTan(id TanID, location Point, rotation Rotation) (ok bool, err error) {
 	// log.Printf("[MoveTan] ID = %d\n", id)
 	tan := game.state.getTan(id)

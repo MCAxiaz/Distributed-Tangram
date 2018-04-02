@@ -23,19 +23,21 @@ type ConnectRequest struct {
 	Player Player
 }
 
+// ConnectResponse is response argument for Node.Connect
 type ConnectResponse struct {
 	State  *GameState
 	Config *GameConfig
 	Player *Player
 }
 
-// LockTanRequest is request argument for Node.Connect
+// LockTanRequest is request argument for Node.LockTan
 type LockTanRequest struct {
 	Tan    TanID
 	Player PlayerID
 	Time   lamport.Time
 }
 
+// MoveTanRequest is request argument for Node.MoveTan
 type MoveTanRequest struct {
 	Tan      TanID
 	Location Point
