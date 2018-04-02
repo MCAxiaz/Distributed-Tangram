@@ -34,7 +34,7 @@ function renderTan(model, node) {
 
 // Attaches textPath to SVG for player's name
 function attachPlayerNameTextToSVG(tanID, playerName) {
-    var svg = document.getElementById("canvas");
+    var svg = document.getElementById("view");
     var use = document.createElement("use");
     use.setAttribute("xlink:href", `#tan-${tanID}`);
     var txt = document.createElement("text");
