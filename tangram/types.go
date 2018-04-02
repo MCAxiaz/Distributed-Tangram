@@ -70,12 +70,13 @@ type Player struct {
 
 // PlayerID is the ID of a Player
 // A valid ID must be non-negative
-// An ID of -1 means nil
 type PlayerID = int
 
-const NO_PLAYER PlayerID = -1
+// NoPlayer is the PlayerID of an uncontrolled tan
+const NoPlayer PlayerID = -1
 
 // TanID is the ID of a Tan
 type TanID = uint32
 
+// Rotation is the type of rotation in degrees
 type Rotation = uint32
