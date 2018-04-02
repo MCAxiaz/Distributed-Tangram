@@ -32,15 +32,26 @@ function renderTan(model, node) {
     return node
 }
 
-function attachPlayerNameOnTan(tan) {
-    var owner = document.createElement("h4");
-    owner.textContent = "";
-    var div = document.createElement("div");
-    div.className = "owner";
-    div.appendChild(owner);
-    tan.appendChild(div);
+// Attaches textPath to SVG for player's name
+function attachPlayerNameTextToSVG(tanID, playerName) {
+    var svg = document.getElementById("canvas");
+    var use = document.createElement("use");
+    use.setAttribute("xlink:href", `#tan-${tanID}`);
+    var txt = document.createElement("text");
+    var txtPath = document.createElement("textPath");
+    txtPath.setAttribute("xlink:href", `#tan-${tanID}`);
+    
+    if (playerName) {
+        txtPath.id = `txtPath-${tanID}-${playerName}`;
+        txtPath.textContent(playerName);
+    } else {
+        txtPath.id = `txtPath-${tanID}`;
+        txtPath.textContent("");
+    }
 
-    return tan;
+    txt.appendChild(txtPath);
+    svg.appendChild(use);
+    svg.appendChild(txt);
 }
 
 var socket;
@@ -56,7 +67,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         if (!tan) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
-            attachPlayerNameOnTan(tan);
+            attachPlayerNameTextToSVG(tan.id, tan.playerName);
             view.appendChild(tan);
             tan.addEventListener("mousedown", onMouseDown)
         }
@@ -73,12 +84,13 @@ document.addEventListener("DOMContentLoaded", function(e) {
     // lockTan objectives
     // - set player name on tan
     // - highlight the tan to indicate someone has possession of it
+    // returns true if tan is successfully locked, false if not
     function lockTan(tanID, playerName) {
         var tan = view.getElementById(`tan-${tanID}`);
         
         if (!tan) {
             console.log("You are grabbing a tan that does not exist.");
-            return;
+            return false;
         }
 
         // TODO: Check if tan is already locked
@@ -86,15 +98,25 @@ document.addEventListener("DOMContentLoaded", function(e) {
         // Change path's fill opacity to half
         tan.setAttribute("fill-opacity", "0.5");
 
-        // TODO: Display player name on tan and set it to locked
-        // Look for any indication of a tan being locked on the frontend
+        // Display player name on tan
+        var txtPath = document.getElementById(`txtPath-${tanID}`);
+        if (!txtPath) {
+            console.log(`No such txtPath with tan ${tanID}`);
+            return false;
+        }
 
+        txtPath.textContent = playerName;
+        txtPath.id = `txtPath-${tanID}-${playerName}`;
+        
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${playerName}.`);
+        // TODO: Is this the right data structure to send?
         socket.send(JSON.stringify({
             type: "LockTan",
             tan: tan.id,
             lockTan: true
         }));
+
+        return true;
     }
 
     function unlockTan(tanID, playerID) {
@@ -102,7 +124,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
         if (!tan) {
             console.log("Cannot unlock a tan that does not exist.");
-            return;
+            return false;
         }
 
         // TODO: Set tan to unlocked
@@ -110,14 +132,24 @@ document.addEventListener("DOMContentLoaded", function(e) {
         // Restore path's fill opacity to 1
         tan.setAttribute("fill-opacity", "1");
         
-        // TODO: Remove player name from tan
+        // Remove player name from tan
+        var txtPath = document.getElementById(`txtPath-${tanID}-${playerID}`);
+        if (!txtPath) {
+            console.log(`No such txtPath with tan ${tanID} and player ${playerName}`);
+            return false;
+        }
+        txtPath.textContent = "";
+        txtPath.id = `txtPath-${tanID}`;
 
         console.log(`[Unlock tan] ${tanID}`);
+        // TODO: Check data structure
         socket.send(JSON.stringify({
             type: "LockTan",
             tan: tan.id,
             lockTan: false
         }));
+
+        return true;
     }
 
     socket = openSocket();
@@ -152,11 +184,17 @@ document.addEventListener("DOMContentLoaded", function(e) {
     function onMouseDown(e) {
         var path = e.target;
         var id = parseInt(path.id.match(/tan-(\d+)/)[1]);
-        console.log(`Holding on to tan id=${id}`);
 
         var tan = state.tans.find(function(tan) {
             return tan.id == id
         });
+
+        var locked = lockTan(tan.id, tan.playerName);
+        if (!locked) {
+            return;
+        }
+
+        console.log(`Holding on to tan id=${id}`);
         
         var startTanPos = {
             x: tan.location.x,
@@ -209,6 +247,10 @@ document.addEventListener("DOMContentLoaded", function(e) {
         document.addEventListener("keypress", rotateListener);
 
         document.addEventListener("mouseup", function(e) {
+            var unlock = unlockTan(id, tan.playerName);
+            if (!unlock) {
+                console.log(`Error encountered while unlocking tan ${id}`);
+            }
             console.log(`Releasing tan id=${id}`);
             document.removeEventListener("mousemove", mouseMoveListener);
             document.removeEventListener("keypress", rotateListener);
