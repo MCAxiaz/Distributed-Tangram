@@ -121,8 +121,7 @@ func (game *Game) connectToPeer(addr string) (err error) {
 		return
 	}
 	game.witnessState(res.State)
-	game.syncTime(game.state.getPlayer(res.Player.ID))
-
+	
 	return
 }
 
