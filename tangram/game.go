@@ -94,6 +94,8 @@ func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
 				return
 			}
 
+			// TODO: handle some graceful way to recover from failing connections
+			// The remote node shouldn't include disconnected clients in game state
 			log.Printf("[ConnectToGame] Attempting connection on %s\n", player.Addr)
 			if err = client.Call("Node.Connect", req, &res); err != nil {
 				return
