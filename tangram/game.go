@@ -38,6 +38,9 @@ func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
 	}
 
 	node.game = game
+
+	go game.heartbeat(state.Players)
+	
 	return
 }
 
@@ -121,7 +124,7 @@ func (game *Game) connectToPeer(addr string) (err error) {
 		return
 	}
 	game.witnessState(res.State)
-	
+
 	return
 }
 
