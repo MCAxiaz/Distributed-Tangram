@@ -73,6 +73,56 @@ func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
 
 	game.witnessState(res.State)
 	game.syncTime(state.getPlayer(res.Player.ID))
+
+	go game.heartbeat(state.Players)
+
+	return
+}
+
+func (game *Game) heartbeat(players []*Player) {
+
+	for {
+		for _, player := range game.state.Players {
+			if player.ID == game.node.player.ID {
+				continue
+			}
+
+			client, err := game.pool.getConnection(player)
+			if err != nil {
+				log.Println(err.Error())
+				continue
+			}
+
+			go game.pingPlayer(player.ID, client)
+		}
+		time.Sleep(1*time.Second)
+	}
+}
+
+func (game *Game) pingPlayer(id PlayerID, client *rpc.Client) {
+	var ok bool
+	err := client.Call("Node.Ping", game.node.player.ID, &ok)
+	if err != nil {
+		game.dropPlayer(id)
+	}
+}
+
+
+func (game *Game) connectToPeer(addr string) (err error) {
+	client, err := rpc.Dial("tcp", addr)
+	if err != nil {
+		fmt.Println("connectToPeer error")
+		return
+	}
+
+	var res ConnectResponse
+	err = client.Call("Node.Connect", ConnectRequest{*game.node.player}, &res)
+	if err != nil {
+		return
+	}
+	game.witnessState(res.State)
+	game.syncTime(game.state.getPlayer(res.Player.ID))
+
 	return
 }
 
@@ -333,7 +383,10 @@ func (game *Game) witnessState(state *GameState) {
 		if game.state.getPlayer(player.ID) != nil {
 			continue
 		}
+
 		log.Printf("[witnessState] Adding Player %d", player.ID)
 		game.state.Players = append(game.state.Players, player)
+
+		game.connectToPeer(player.Addr)
 	}
 }

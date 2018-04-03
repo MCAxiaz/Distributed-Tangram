@@ -118,3 +118,9 @@ func (node *Node) MoveTan(req MoveTanRequest, ok *bool) (err error) {
 	*ok, err = node.game.moveTan(req.Tan, req.Location, req.Rotation, req.Time)
 	return
 }
+
+func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
+	//do something
+	*ok = true
+	return
+}
