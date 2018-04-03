@@ -43,24 +43,75 @@ func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
 
 // ConnectToGame connects to an existing game at addr
 func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
-	node, err := startNode(localAddr)
+	var (
+		node   *Node
+		client *rpc.Client
+		res    ConnectResponse
+	)
+
+	node, err = startNode(localAddr)
 	if err != nil {
 		return
 	}
 
-	client, err := rpc.Dial("tcp", addr)
+	client, err = rpc.Dial("tcp", addr)
 	if err != nil {
 		return
 	}
 
-	var res ConnectResponse
-	err = client.Call("Node.Connect", ConnectRequest{*node.player}, &res)
-	if err != nil {
+	req := ConnectRequest{*node.player}
+
+	log.Printf("[ConnectToGame] Attempting connection on %s\n", addr)
+	if err = client.Call("Node.Connect", req, &res); err != nil {
 		return
 	}
 
 	config := res.Config
 	state := initState(config, node.player)
+
+	attempted := make(map[string]bool)
+	attempted[addr] = true
+
+	todo := []*Player{}
+
+	for _, player := range state.Players {
+		attempted[player.Addr] = false
+		todo = append(todo, player)
+	}
+
+	for {
+		last := len(todo) - 1
+
+		if last == -1 {
+			break
+		}
+
+		player := todo[last]
+
+		if !(player.Addr == node.player.Addr) && !attempted[player.Addr] {
+			client, err = rpc.Dial("tcp", player.Addr)
+			if err != nil {
+				return
+			}
+
+			log.Printf("[ConnectToGame] Attempting connection on %s\n", player.Addr)
+			if err = client.Call("Node.Connect", req, &res); err != nil {
+				return
+			}
+
+			attempted[player.Addr] = true
+
+			// Discover addresses we may not already know
+			for _, other := range res.State.Players {
+				if _, ok := attempted[other.Addr]; !ok {
+					log.Printf("Appending undiscovered client %s\n", other.Addr)
+					todo = append(todo, other)
+				}
+			}
+		}
+
+		todo = append(todo[:last], todo[last+1:]...)
+	}
 
 	game = &Game{
 		state:       state,
@@ -69,6 +120,7 @@ func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
 		pool:        newConnectionPool(),
 		subscribers: make([]chan bool, 0),
 	}
+
 	node.game = game
 
 	game.witnessState(res.State)
