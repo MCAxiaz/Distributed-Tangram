@@ -107,8 +107,8 @@ document.addEventListener("DOMContentLoaded", function(e) {
         };
 
         var mouseMoveListener = function (e) {
-            tan.location.x = startTanPos.x + (e.clientX - startMousePos.x);
-            tan.location.y = startTanPos.y + (e.clientY - startMousePos.y);
+            tan.location.x = Math.max(0, Math.min(startTanPos.x + (e.clientX - startMousePos.x), config.Size.x));
+            tan.location.y = Math.max(0, Math.min(startTanPos.y + (e.clientY - startMousePos.y), config.Size.y));
             renderTan(tan, path);
             socket.send(JSON.stringify({
                 type: "MoveTan",
