@@ -25,6 +25,10 @@ function renderTan(model, node) {
     node.id = id;
     node.setAttribute('fill', model.shape.fill);
     node.setAttribute('stroke', model.shape.stroke);
+    if (model.Matched) {
+      node.setAttribute('stroke', 'green');
+    }
+
     node.setAttribute('transform', transform);
     node.setAttribute('d', d);
     node.setAttribute('class', 'draggable');
@@ -32,7 +36,6 @@ function renderTan(model, node) {
 }
 
 function renderTargetTan(model, offset, node) {
-    //var transform = `translate(${model.location.x + 300}, ${model.location.y + 50}) rotate(${model.rotation})`;
     var transform = `translate(${model.location.x + offset.x}, ${model.location.y + offset.y}) rotate(${model.rotation})`;
     var d = "";
     model.shape.points.forEach(function(point, i) {
@@ -77,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
     }
 
     function renderTarget(config) {
-      for (let ttan of config.target) {
+      for (let ttan of config.targets) {
         let node = document.createElementNS(view.namespaceURI, "path");
         renderTargetTan(ttan, config.Offset, node)
         view.appendChild(node);

@@ -17,6 +17,7 @@ type GameState struct {
 	Timer   time.Time
 	Players []*Player
 	Host    *Player
+	Solved  bool
 }
 
 // GameConfig is the starting configuration of a game
@@ -25,6 +26,7 @@ type GameState struct {
 type GameConfig struct {
 	Size    Point
 	Offset  Point
+	Margin  int32
 	Tans    []*Tan
 	Targets []*TargetTan `json:"targets"`
 }
@@ -44,6 +46,7 @@ type Tan struct {
 	Location  Point         `json:"location"`
 	Rotation  Rotation      `json:"rotation"`
 	Clock     lamport.Clock `json:"clock"`
+	Matched   bool
 }
 
 // Tan is a struct that holds the following information:

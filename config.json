@@ -112,7 +112,7 @@
             "location": { "x": 175, "y": 175 }
         }
     ],
-    "Target": [
+    "Targets": [
       {
           "type": "LTri",
           "shape": {
