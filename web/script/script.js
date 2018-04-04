@@ -21,7 +21,7 @@ function renderTan(model, node) {
         d += `${command} ${point.x} ${point.y} `;
     });
     d += "Z";
-    
+
     node.id = id;
     node.setAttribute('fill', model.shape.fill);
     node.setAttribute('stroke', model.shape.stroke);
@@ -31,9 +31,9 @@ function renderTan(model, node) {
     return node
 }
 
-function renderTargetTan(model, node) {
+function renderTargetTan(model, offset, node) {
     //var transform = `translate(${model.location.x + 300}, ${model.location.y + 50}) rotate(${model.rotation})`;
-    var transform = `translate(${model.location.x}, ${model.location.y}) rotate(${model.rotation})`;
+    var transform = `translate(${model.location.x + offset.x}, ${model.location.y + offset.y}) rotate(${model.rotation})`;
     var d = "";
     model.shape.points.forEach(function(point, i) {
         var command = i == 0 ? "M" : "L";
@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
     function renderTarget(config) {
       for (let ttan of config.target) {
         let node = document.createElementNS(view.namespaceURI, "path");
-        renderTargetTan(ttan, node)
+        renderTargetTan(ttan, config.Offset, node)
         view.appendChild(node);
       }
     }
@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         var tan = state.tans.find(function(tan) {
             return tan.id == id
         });
-        
+
         var startTanPos = {
             x: tan.location.x,
             y: tan.location.y,
