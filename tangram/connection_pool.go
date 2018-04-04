@@ -33,3 +33,7 @@ func (pool *connectionPool) connect(addr string) (client *rpc.Client, err error)
 	client, err = rpc.Dial("tcp", addr)
 	return
 }
+
+func (pool *connectionPool) dropConnection(id PlayerID) {
+	delete(pool.connections, id)
+}

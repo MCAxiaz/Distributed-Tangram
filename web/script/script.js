@@ -28,7 +28,7 @@ function renderTan(model, node) {
     node.setAttribute('stroke', model.shape.stroke);
     node.setAttribute('transform', transform);
     node.setAttribute('d', d);
-
+    node.setAttribute('class', 'draggable');
     return node
 }
 
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             renderTan(model, tan);
             attachPlayerNameTextToSVG(tan.id, tan.playerName);
             view.appendChild(tan);
-            tan.addEventListener("mousedown", onMouseDown)
+            tan.addEventListener("pointerdown", onMouseDown)
         }
         return tan;
     }
@@ -210,8 +210,8 @@ document.addEventListener("DOMContentLoaded", function(e) {
         };
 
         var mouseMoveListener = function (e) {
-            tan.location.x = startTanPos.x + (e.clientX - startMousePos.x);
-            tan.location.y = startTanPos.y + (e.clientY - startMousePos.y);
+            tan.location.x = Math.max(0, Math.min(startTanPos.x + (e.clientX - startMousePos.x), config.Size.x));
+            tan.location.y = Math.max(0, Math.min(startTanPos.y + (e.clientY - startMousePos.y), config.Size.y));
             renderTan(tan, path);
             socket.send(JSON.stringify({
                 type: "MoveTan",
@@ -220,7 +220,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
                 rotation: tan.rotation
             }));
         };
-        document.addEventListener("mousemove", mouseMoveListener);
+        document.addEventListener("pointermove", mouseMoveListener);
 
         // Rotate tan clockwise or counter-clockwise
         var rotateListener = function (e) {
@@ -248,13 +248,14 @@ document.addEventListener("DOMContentLoaded", function(e) {
         };
         document.addEventListener("keypress", rotateListener);
 
-        document.addEventListener("mouseup", function(e) {
+
+        document.addEventListener("pointerup", function(e) {
             var unlock = unlockTan(id, tan.playerName);
             if (!unlock) {
                 console.log(`Error encountered while unlocking tan ${id}`);
             }
             console.log(`Releasing tan id=${id}`);
-            document.removeEventListener("mousemove", mouseMoveListener);
+            document.removeEventListener("pointermove", mouseMoveListener);
             document.removeEventListener("keypress", rotateListener);
 
             socket.send(JSON.stringify({
