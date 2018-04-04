@@ -23,9 +23,10 @@ type GameState struct {
 // - Tans: Tans position when the game begins
 // - Target: The shape players are trying to form with tans.
 type GameConfig struct {
-	Size   Point
-	Tans   []*Tan
-	Target []*TargetTan `json:"target"`
+	Size    Point
+	Offset  Point
+	Tans    []*Tan
+	Targets []*TargetTan `json:"targets"`
 }
 
 // Tan is a struct that holds the following information:
