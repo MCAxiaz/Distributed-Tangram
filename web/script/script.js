@@ -40,13 +40,13 @@ function attachPlayerNameTextToSVG(tanID, playerName) {
     var txt = document.createElement("text");
     var txtPath = document.createElement("textPath");
     txtPath.setAttribute("xlink:href", `#tan-${tanID}`);
-    
+
     if (playerName) {
         txtPath.id = `txtPath-${tanID}-${playerName}`;
-        txtPath.textContent(playerName);
+        txtPath.innerText(playerName);
     } else {
         txtPath.id = `txtPath-${tanID}`;
-        txtPath.textContent("");
+        txtPath.innerText = "";
     }
 
     txt.appendChild(txtPath);
@@ -99,22 +99,23 @@ document.addEventListener("DOMContentLoaded", function(e) {
         tan.setAttribute("fill-opacity", "0.5");
 
         // Display player name on tan
-        var txtPath = document.getElementById(`txtPath-${tanID}`);
+        var txtPath = document.getElementById(`txtPath-tan-${tanID}`);
         if (!txtPath) {
             console.log(`No such txtPath with tan ${tanID}`);
             return false;
         }
 
-        txtPath.textContent = playerName;
-        txtPath.id = `txtPath-${tanID}-${playerName}`;
+        txtPath.innerText = playerName;
+        txtPath.id = `txtPath-tan-${tanID}-${playerName}`;
+        console.log(txtPath.id);
         
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${playerName}.`);
         // TODO: Is this the right data structure to send?
-        socket.send(JSON.stringify({
+        /*socket.send(JSON.stringify({
             type: "LockTan",
             tan: tan.id,
             lockTan: true
-        }));
+        }));*/
 
         return true;
     }
@@ -133,21 +134,22 @@ document.addEventListener("DOMContentLoaded", function(e) {
         tan.setAttribute("fill-opacity", "1");
         
         // Remove player name from tan
-        var txtPath = document.getElementById(`txtPath-${tanID}-${playerID}`);
+        var txtPath = document.getElementById(`txtPath-tan-${tanID}-${playerID}`);
         if (!txtPath) {
             console.log(`No such txtPath with tan ${tanID} and player ${playerName}`);
             return false;
         }
-        txtPath.textContent = "";
-        txtPath.id = `txtPath-${tanID}`;
+
+        txtPath.innerText = "";
+        txtPath.id = `txtPath-tan-${tanID}`;
 
         console.log(`[Unlock tan] ${tanID}`);
         // TODO: Check data structure
-        socket.send(JSON.stringify({
+        /*socket.send(JSON.stringify({
             type: "LockTan",
             tan: tan.id,
             lockTan: false
-        }));
+        }));*/
 
         return true;
     }
