@@ -18,24 +18,12 @@ type Game struct {
 	subscribers []chan bool
 }
 
-// Player global variable
-var player *Player
-
-// GetPlayer allows other packages such as handler to access the player struct
-// since it is not accessible from the game struct
-func GetPlayer() *Player {
-	return player
-}
-
 // NewGame starts a new Game
 func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
 	node, err := startNode(localAddr)
 	if err != nil {
 		return
 	}
-
-	// Player is a global variable in package tangram
-	player = node.player
 
 	state := initState(config, node.player)
 	// TODO Sometimes this needs to be nil to signify lack of a host
@@ -62,9 +50,6 @@ func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
 	if err != nil {
 		return
 	}
-
-	// Player is a global variable in package tangram
-	player = node.player
 
 	client, err := rpc.Dial("tcp", addr)
 	if err != nil {
@@ -207,6 +192,10 @@ func (game *Game) GetTime() time.Duration {
 // GetConfig returns the config of the game
 func (game *Game) GetConfig() *GameConfig {
 	return game.config
+}
+
+func (game *Game) GetPlayer() *Player {
+	return game.node.player
 }
 
 func (game *Game) syncTime(player *Player) (err error) {
