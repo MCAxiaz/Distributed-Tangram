@@ -24,7 +24,7 @@ function renderTan(model, node) {
     
     node.id = id;
     node.setAttribute('fill', model.shape.fill);
-    node.setAttribute('fill-opacity', '1'); // fill-opacity's value will be halved when tan is possessed
+    // TODO: Check if tan is locked first, then decide on the fill opacity value
     node.setAttribute('stroke', model.shape.stroke);
     node.setAttribute('transform', transform);
     node.setAttribute('d', d);
@@ -36,10 +36,11 @@ function renderTan(model, node) {
 function attachPlayerNameTextToSVG(tanID, playerName) {
     var svg = document.getElementById("view");
     var use = document.createElement("use");
-    use.setAttribute("xlink:href", `#tan-${tanID}`);
+
+    use.setAttribute("xlink:href", `#${tanID}`);
     var txt = document.createElement("text");
     var txtPath = document.createElement("textPath");
-    txtPath.setAttribute("xlink:href", `#tan-${tanID}`);
+    txtPath.setAttribute("xlink:href", `#${tanID}`);
 
     if (playerName) {
         txtPath.id = `txtPath-${tanID}-${playerName}`;
@@ -57,6 +58,7 @@ function attachPlayerNameTextToSVG(tanID, playerName) {
 var socket;
 var config;
 var state;
+var player;
 document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
     var timer = document.getElementById("timer");
@@ -85,9 +87,9 @@ document.addEventListener("DOMContentLoaded", function(e) {
     // - set player name on tan
     // - highlight the tan to indicate someone has possession of it
     // returns true if tan is successfully locked, false if not
-    function lockTan(tanID, playerName) {
+    function lockTan(tanID) {
         var tan = view.getElementById(`tan-${tanID}`);
-        
+
         if (!tan) {
             console.log("You are grabbing a tan that does not exist.");
             return false;
@@ -105,11 +107,10 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return false;
         }
 
-        txtPath.innerText = playerName;
-        txtPath.id = `txtPath-tan-${tanID}-${playerName}`;
-        console.log(txtPath.id);
+        txtPath.innerText = player.playerName;
+        txtPath.id = `txtPath-tan-${tanID}-${player.playerID}`;
         
-        console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${playerName}.`);
+        console.log(`[Lock tan] Tan ${tanID}: I am possessed by steph.`);
         // TODO: Is this the right data structure to send?
         /*socket.send(JSON.stringify({
             type: "LockTan",
@@ -136,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         // Remove player name from tan
         var txtPath = document.getElementById(`txtPath-tan-${tanID}-${playerID}`);
         if (!txtPath) {
-            console.log(`No such txtPath with tan ${tanID} and player ${playerName}`);
+            console.log(`No such txtPath with tan ${tanID} and player ${playerID}`);
             return false;
         }
 
@@ -167,6 +168,9 @@ document.addEventListener("DOMContentLoaded", function(e) {
             config = message.data;
             view.setAttribute("width", config.Size.x)
             view.setAttribute("height", config.Size.y)
+            break;
+        case "player":
+            player = message.data;
             break;
         }
     });
@@ -212,8 +216,8 @@ document.addEventListener("DOMContentLoaded", function(e) {
         };
 
         var mouseMoveListener = function (e) {
-            tan.location.x = Math.max(0, Math.min(startTanPos.x + (e.clientX - startMousePos.x), config.Size.x));
-            tan.location.y = Math.max(0, Math.min(startTanPos.y + (e.clientY - startMousePos.y), config.Size.y));
+            tan.location.x = Math.round(Math.max(0, Math.min(startTanPos.x + (e.clientX - startMousePos.x), config.Size.x)));
+            tan.location.y = Math.round(Math.max(0, Math.min(startTanPos.y + (e.clientY - startMousePos.y), config.Size.y)));
             renderTan(tan, path);
             socket.send(JSON.stringify({
                 type: "MoveTan",
