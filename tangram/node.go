@@ -2,10 +2,13 @@ package tangram
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
+	"net/http"
 	"net/rpc"
+	"strings"
 	"time"
 
 	"../lamport"
@@ -46,8 +49,8 @@ type MoveTanRequest struct {
 }
 
 // startNode instantiates the RPC server which will allow for communication between client nodes
-func startNode(localAddr string) (node *Node, err error) {
-	addr, err := net.ResolveTCPAddr("tcp", localAddr)
+func startNode(port int) (node *Node, err error) {
+	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%v", port))
 	if err != nil {
 		return
 	}
@@ -60,7 +63,23 @@ func startNode(localAddr string) (node *Node, err error) {
 	node = new(Node)
 	node.listener = inbound
 
-	localAddr = inbound.Addr().String()
+	// Find the outbound IP address to listen to
+	res, err := http.Get("https://wtfismyip.com/text")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer res.Body.Close()
+	ipBytes, err := ioutil.ReadAll(res.Body)
+	ip := strings.TrimSpace(string(ipBytes[:len(ipBytes)]))
+
+	fmt.Println(ip)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	localAddr := fmt.Sprintf("%v:%v", ip, port)
 	node.player = newPlayer(localAddr)
 
 	server := rpc.NewServer()
@@ -119,6 +138,7 @@ func (node *Node) MoveTan(req MoveTanRequest, ok *bool) (err error) {
 	return
 }
 
+// Ping simply confirms that the connection is good
 func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
 	//do something
 	*ok = true

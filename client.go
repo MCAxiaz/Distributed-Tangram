@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"net"
 	"net/http"
 	"time"
 
@@ -42,21 +41,11 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// Find the outbound IP address to listen to
-	conn, err := net.Dial("udp", "1.1.1.1:80")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer conn.Close()
-
-	localRPCAddr := fmt.Sprintf("%v:%v", conn.LocalAddr().(*net.UDPAddr).IP.String(), *rpcPort)
-
 	var game *tangram.Game
 	if *remoteAddr == "" {
-		game, err = tangram.NewGame(config, localRPCAddr)
+		game, err = tangram.NewGame(config, *rpcPort)
 	} else {
-		game, err = tangram.ConnectToGame(*remoteAddr, localRPCAddr)
+		game, err = tangram.ConnectToGame(*remoteAddr, *rpcPort)
 	}
 
 	if err != nil {
