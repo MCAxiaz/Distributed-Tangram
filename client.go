@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
-	"strconv"
 	"time"
 
 	"./tangram"
@@ -24,7 +24,7 @@ var upgrader = websocket.Upgrader{
 
 func main() {
 	remoteAddr := flag.String("c", "", "remote client to connect to")
-	localRPCAddr := flag.Int("p", 0, "address to expose")
+	rpcPort := flag.Int("p", 0, "address to expose")
 
 	flag.Parse()
 
@@ -41,11 +41,22 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	// Find the outbound IP address to listen to
+	conn, err := net.Dial("udp", "1.1.1.1:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer conn.Close()
+
+	localRPCAddr := fmt.Sprintf("%v:%v", conn.LocalAddr().(*net.UDPAddr).IP.String(), *rpcPort)
+
 	var game *tangram.Game
 	if *remoteAddr == "" {
-		game, err = tangram.NewGame(config, ":"+strconv.Itoa(*localRPCAddr))
+		game, err = tangram.NewGame(config, localRPCAddr)
 	} else {
-		game, err = tangram.ConnectToGame(*remoteAddr, ":"+strconv.Itoa(*localRPCAddr))
+		game, err = tangram.ConnectToGame(*remoteAddr, localRPCAddr)
 	}
 
 	if err != nil {
