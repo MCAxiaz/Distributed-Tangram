@@ -40,7 +40,7 @@ func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
 	node.game = game
 
 	go game.heartbeat(state.Players)
-	
+
 	return
 }
 
@@ -98,7 +98,7 @@ func (game *Game) heartbeat(players []*Player) {
 
 			go game.pingPlayer(player.ID, client)
 		}
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -109,7 +109,6 @@ func (game *Game) pingPlayer(id PlayerID, client *rpc.Client) {
 		game.dropPlayer(id)
 	}
 }
-
 
 func (game *Game) connectToPeer(addr string) (err error) {
 	client, err := rpc.Dial("tcp", addr)
