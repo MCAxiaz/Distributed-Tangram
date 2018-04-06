@@ -229,37 +229,31 @@ func (game *Game) GetConfig() *GameConfig {
 }
 
 func (game *Game) syncTime(player *Player) (err error) {
-	// log.Printf("[syncTime] Start with player %d", player.ID)
-	// client, err := rpc.Dial("tcp", player.Addr)
-	// if err != nil {
-	// 	return
-	// }
+	var d1, d2 time.Duration
+	err = game.node.call(player.ID, "Node", "GetTime", 0, &d1)
+	if err != nil {
+		return
+	}
+	log.Printf("[syncTime] Got first response")
 
-	// var d1, d2 time.Duration
-	// err = client.Call("Node.GetTime", 0, &d1)
-	// if err != nil {
-	// 	return
-	// }
-	// log.Printf("[syncTime] Got first response")
+	err = game.node.call(player.ID, "Node", "GetTime", 0, &d2)
+	if err != nil {
+		return
+	}
+	log.Printf("[syncTime] Got second response")
 
-	// err = client.Call("Node.GetTime", 0, &d2)
-	// if err != nil {
-	// 	return
-	// }
-	// log.Printf("[syncTime] Got second response")
+	t0 := time.Now()
+	rtt := d2 - d1
 
-	// t0 := time.Now()
-	// rtt := d2 - d1
-
-	// newTime := t0.Add(-rtt / 2).Add(-d2)
-	// game.lock.Lock()
-	// if true {
-	// 	oldTime := game.state.Timer
-	// 	d := newTime.Sub(oldTime).Nanoseconds()
-	// 	log.Printf("Time Sync with Player %d, d = %d\n", player.ID, d)
-	// }
-	// game.state.Timer = newTime
-	// game.lock.Unlock()
+	newTime := t0.Add(-rtt / 2).Add(-d2)
+	game.lock.Lock()
+	if true {
+		oldTime := game.state.Timer
+		d := newTime.Sub(oldTime).Nanoseconds()
+		log.Printf("Time Sync with Player %s, d = %d\n", player.ID, d)
+	}
+	game.state.Timer = newTime
+	game.lock.Unlock()
 
 	return
 }
@@ -278,7 +272,7 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 	}
 
 	if tan.Player != NoPlayer && tan.Player != game.node.player.ID {
-		log.Printf("[ObtainTan] Obtaining TanID = %d failed. Already controlled by %d", id, tan.Player)
+		log.Printf("[ObtainTan] Obtaining TanID = %d failed. Already controlled by %s", id, tan.Player)
 		game.lock.Unlock()
 		return false, nil
 	}
@@ -437,7 +431,7 @@ func (game *Game) witnessState(state *GameState) {
 			continue
 		}
 
-		log.Printf("[witnessState] Adding Player %d at %s", player.ID, player.Addr)
+		log.Printf("[witnessState] Adding Player %s at %s", player.ID, player.Addr)
 		game.state.Players = append(game.state.Players, player)
 
 		game.connectToPeer(player.Addr)

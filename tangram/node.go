@@ -125,7 +125,7 @@ func (node *Node) Connect(ctx context.Context, req *ConnectRequest, res *Connect
 	fmt.Println("[Connect] Player Addr:", req.Player.Addr)
 	for _, player := range node.game.state.Players {
 		if req.Player.ID == player.ID {
-			return fmt.Errorf("Player ID = %d is already in the game", player.ID)
+			return fmt.Errorf("Player ID = %s is already in the game", player.ID)
 		}
 	}
 
