@@ -4,7 +4,7 @@ function openSocket() {
         console.log(`[Socket] Connected to ${socket.url}`);
     });
     socket.addEventListener("message", function (e) {
-        console.log("[Socket] Message\n", e.data);
+        //console.log("[Socket] Message\n", e.data);
     });
     socket.addEventListener("error", function (e) {
         console.error(e);
@@ -37,10 +37,10 @@ function attachPlayerNameTextToSVG(tanID, playerName) {
     var svg = document.getElementById("view");
     var use = document.createElement("use");
 
-    use.setAttribute("xlink:href", `#${tanID}`);
+    use.setAttribute("xlink:href", `${tanID}`);
     var txt = document.createElement("text");
     var txtPath = document.createElement("textPath");
-    txtPath.setAttribute("xlink:href", `#${tanID}`);
+    txtPath.setAttribute("xlink:href", `${tanID}`);
 
     if (playerName) {
         txtPath.id = `txtPath-${tanID}-${playerName}`;
@@ -61,6 +61,8 @@ var state;
 var player;
 document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
+    view.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    view.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
     var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
 
@@ -106,11 +108,11 @@ document.addEventListener("DOMContentLoaded", function(e) {
             console.log(`No such txtPath with tan ${tanID}`);
             return false;
         }
-
-        txtPath.innerText = player.playerName;
-        txtPath.id = `txtPath-tan-${tanID}-${player.playerID}`;
         
-        console.log(`[Lock tan] Tan ${tanID}: I am possessed by steph.`);
+        txtPath.innerText = player.ID;
+        txtPath.id = `txtPath-tan-${tanID}-${player.ID}`;
+        
+        console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${player.ID}.`);
         // TODO: Is this the right data structure to send?
         /*socket.send(JSON.stringify({
             type: "LockTan",
@@ -121,7 +123,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         return true;
     }
 
-    function unlockTan(tanID, playerID) {
+    function unlockTan(tanID) {
         var tan = view.getElementById(`tan-${tanID}`);
 
         if (!tan) {
@@ -135,9 +137,9 @@ document.addEventListener("DOMContentLoaded", function(e) {
         tan.setAttribute("fill-opacity", "1");
         
         // Remove player name from tan
-        var txtPath = document.getElementById(`txtPath-tan-${tanID}-${playerID}`);
+        var txtPath = document.getElementById(`txtPath-tan-${tanID}-${player.ID}`);
         if (!txtPath) {
-            console.log(`No such txtPath with tan ${tanID} and player ${playerID}`);
+            console.log(`No such txtPath with tan ${tanID} and player ${player.ID}`);
             return false;
         }
 
@@ -197,7 +199,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
         // TODO: The player name used here is incorrect.
         // Is there a data structure on the frontend that stores the player who is playing the game on that node?
-        var locked = lockTan(tan.id, tan.playerName);
+        var locked = lockTan(tan.id);
         if (!locked) {
             return;
         }
@@ -256,7 +258,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
 
         document.addEventListener("pointerup", function(e) {
-            var unlock = unlockTan(id, tan.playerName);
+            var unlock = unlockTan(id);
             if (!unlock) {
                 console.log(`Error encountered while unlocking tan ${id}`);
             }
