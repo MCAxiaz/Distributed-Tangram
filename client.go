@@ -25,6 +25,7 @@ func main() {
 	remoteAddr := flag.String("c", "", "remote client to connect to")
 	rpcPort := flag.Int("p", 9000, "address to expose")
 	identifier := flag.Int("i", 0, "identifier for this client")
+	local := flag.Bool("l", false, "prevent public IP lookup")
 
 	flag.Parse()
 
@@ -35,19 +36,22 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// Find the outbound IP address to listen to
-	res, err := http.Get("https://ipv4.wtfismyip.com/text")
-	if err != nil {
-		log.Fatalln(err)
-	}
+	var ip string
+	if !*local {
+		// Find the outbound IP address to listen to
+		res, err := http.Get("https://ipv4.wtfismyip.com/text")
+		if err != nil {
+			log.Fatalln(err)
+		}
 
-	defer res.Body.Close()
-	ipBytes, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
+		defer res.Body.Close()
+		ipBytes, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
 
-	ip := strings.TrimSpace(string(ipBytes[:len(ipBytes)]))
+		ip = strings.TrimSpace(string(ipBytes[:len(ipBytes)]))
+	}
 
 	rpcAddr := fmt.Sprintf("%v:%v", ip, *rpcPort)
 

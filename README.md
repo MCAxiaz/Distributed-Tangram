@@ -13,3 +13,5 @@ clientAddr
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*optional*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*default: 9000*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Port to use for RPC  
 -i identifier  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*optional*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*default: 0*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Id to use for this client. 0 will randomize.  
+-l  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*optional*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*default: false*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Prevents public IP lookup  
