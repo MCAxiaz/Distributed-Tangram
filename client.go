@@ -1,4 +1,3 @@
-// package proj2_e3v8_e6y9a_g2u9a_j2d0b_u6x9a
 package main
 
 import (
