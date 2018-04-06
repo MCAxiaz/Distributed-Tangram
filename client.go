@@ -9,7 +9,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"strings"
 	"time"
 
 	"./tangram"
@@ -35,27 +34,11 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// Find the outbound IP address to listen to
-	res, err := http.Get("https://wtfismyip.com/text")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer res.Body.Close()
-	ipBytes, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	ip := strings.TrimSpace(string(ipBytes[:len(ipBytes)]))
-
-	rpcAddr := fmt.Sprintf("%v:%v", ip, *rpcPort)
-
 	var game *tangram.Game
 	if *remoteAddr == "" {
-		game, err = tangram.NewGame(config, rpcAddr)
+		game, err = tangram.NewGame(config, *rpcPort)
 	} else {
-		game, err = tangram.ConnectToGame(*remoteAddr, rpcAddr)
+		game, err = tangram.ConnectToGame(*remoteAddr, *rpcPort)
 	}
 
 	if err != nil {

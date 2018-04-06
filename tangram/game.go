@@ -3,11 +3,11 @@ package tangram
 import (
 	"fmt"
 	"log"
-	"net/rpc"
 	"sync"
 	"time"
 
 	"../lamport"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 // Game is the public interface of a tangram game
@@ -16,26 +16,22 @@ type Game struct {
 	state       *GameState
 	config      *GameConfig
 	node        *Node
-	pool        *connectionPool
 	subscribers []chan bool
 }
 
 // NewGame starts a new Game
-func NewGame(config *GameConfig, addr string) (game *Game, err error) {
-	node, err := startNode(addr)
+func NewGame(config *GameConfig, port int) (game *Game, err error) {
+	node, err := startNode(port)
 	if err != nil {
 		return
 	}
 
 	state := initState(config, node.player)
-	// TODO Sometimes this needs to be nil to signify lack of a host
-	state.Host = node.player
 
 	game = &Game{
 		state:       state,
 		config:      config,
 		node:        node,
-		pool:        newConnectionPool(),
 		subscribers: make([]chan bool, 0),
 	}
 
@@ -47,19 +43,19 @@ func NewGame(config *GameConfig, addr string) (game *Game, err error) {
 }
 
 // ConnectToGame connects to an existing game at addr
-func ConnectToGame(remoteAddr string, addr string) (game *Game, err error) {
-	node, err := startNode(addr)
+func ConnectToGame(remoteAddr string, port int) (game *Game, err error) {
+	node, err := startNode(port)
 	if err != nil {
 		return
 	}
 
-	client, err := rpc.Dial("tcp", remoteAddr)
+	player, err := node.addPeer(remoteAddr)
 	if err != nil {
 		return
 	}
 
 	var res ConnectResponse
-	err = client.Call("Node.Connect", ConnectRequest{*node.player}, &res)
+	err = node.call(player.ID, "Node", "Connect", ConnectRequest{*node.player}, &res)
 	if err != nil {
 		return
 	}
@@ -71,7 +67,6 @@ func ConnectToGame(remoteAddr string, addr string) (game *Game, err error) {
 		state:       state,
 		config:      config,
 		node:        node,
-		pool:        newConnectionPool(),
 		subscribers: make([]chan bool, 0),
 	}
 	node.game = game
@@ -85,45 +80,38 @@ func ConnectToGame(remoteAddr string, addr string) (game *Game, err error) {
 }
 
 func (game *Game) heartbeat(players []*Player) {
-
 	for {
 		for _, player := range game.state.Players {
 			if player.ID == game.node.player.ID {
 				continue
 			}
 
-			client, err := game.pool.getConnection(player)
-			if err != nil {
-				log.Println(err.Error())
-				continue
-			}
-
-			go game.pingPlayer(player.ID, client)
+			go game.pingPlayer(player.ID)
 		}
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func (game *Game) pingPlayer(id PlayerID, client *rpc.Client) {
+func (game *Game) pingPlayer(id PlayerID) {
 	var ok bool
-	err := client.Call("Node.Ping", game.node.player.ID, &ok)
+	err := game.node.call(id, "Node", "Ping", game.node.player.ID, &ok)
 	if err != nil {
 		game.dropPlayer(id)
 	}
 }
 
 func (game *Game) connectToPeer(addr string) (err error) {
-	client, err := rpc.Dial("tcp", addr)
+	player, err := game.node.addPeer(addr)
 	if err != nil {
-		fmt.Println("connectToPeer error")
 		return
 	}
 
 	var res ConnectResponse
-	err = client.Call("Node.Connect", ConnectRequest{*game.node.player}, &res)
+	err = game.node.call(player.ID, "Node", "Connect", ConnectRequest{*game.node.player}, &res)
 	if err != nil {
 		return
 	}
+
 	game.witnessState(res.State)
 
 	return
@@ -241,37 +229,37 @@ func (game *Game) GetConfig() *GameConfig {
 }
 
 func (game *Game) syncTime(player *Player) (err error) {
-	log.Printf("[syncTime] Start with player %d", player.ID)
-	client, err := rpc.Dial("tcp", player.Addr)
-	if err != nil {
-		return
-	}
+	// log.Printf("[syncTime] Start with player %d", player.ID)
+	// client, err := rpc.Dial("tcp", player.Addr)
+	// if err != nil {
+	// 	return
+	// }
 
-	var d1, d2 time.Duration
-	err = client.Call("Node.GetTime", 0, &d1)
-	if err != nil {
-		return
-	}
-	log.Printf("[syncTime] Got first response")
+	// var d1, d2 time.Duration
+	// err = client.Call("Node.GetTime", 0, &d1)
+	// if err != nil {
+	// 	return
+	// }
+	// log.Printf("[syncTime] Got first response")
 
-	err = client.Call("Node.GetTime", 0, &d2)
-	if err != nil {
-		return
-	}
-	log.Printf("[syncTime] Got second response")
+	// err = client.Call("Node.GetTime", 0, &d2)
+	// if err != nil {
+	// 	return
+	// }
+	// log.Printf("[syncTime] Got second response")
 
-	t0 := time.Now()
-	rtt := d2 - d1
+	// t0 := time.Now()
+	// rtt := d2 - d1
 
-	newTime := t0.Add(-rtt / 2).Add(-d2)
-	game.lock.Lock()
-	if true {
-		oldTime := game.state.Timer
-		d := newTime.Sub(oldTime).Nanoseconds()
-		log.Printf("Time Sync with Player %d, d = %d\n", player.ID, d)
-	}
-	game.state.Timer = newTime
-	game.lock.Unlock()
+	// newTime := t0.Add(-rtt / 2).Add(-d2)
+	// game.lock.Lock()
+	// if true {
+	// 	oldTime := game.state.Timer
+	// 	d := newTime.Sub(oldTime).Nanoseconds()
+	// 	log.Printf("Time Sync with Player %d, d = %d\n", player.ID, d)
+	// }
+	// game.state.Timer = newTime
+	// game.lock.Unlock()
 
 	return
 }
@@ -311,22 +299,16 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 			continue
 		}
 
-		client, err := game.pool.getConnection(player)
-		// TODO handle error properly
-		if err != nil {
-			continue
-		}
-
-		go func(client *rpc.Client, player PlayerID) {
+		go func(player PlayerID, peer peer.ID) {
 			var ok bool
-			client.Call("Node.LockTan", LockTanRequest{id, player, time}, &ok)
+			game.node.call(player, "Node", "LockTan", LockTanRequest{id, player, time}, &ok)
 			// TODO handle error properly?
 			if err != nil {
 				log.Println(err.Error())
 				okChan <- true
 			}
 			okChan <- ok
-		}(client, playerID)
+		}(playerID, player.ID)
 		n++
 	}
 	log.Printf("[ObtainTan] ID = %d. %d peer responses expected\n", id, n)
@@ -379,17 +361,13 @@ func (game *Game) MoveTan(id TanID, location Point, rotation Rotation) (ok bool,
 			continue
 		}
 
-		client, err := game.pool.getConnection(player)
-		// TODO handle error properly
-		if err != nil {
-			log.Println(err.Error())
-			continue
-		}
-
-		go func(client *rpc.Client) {
+		go func(peer peer.ID) {
 			var ok bool
-			client.Call("Node.MoveTan", MoveTanRequest{id, location, rotation, time}, &ok)
-		}(client)
+			err := game.node.call(peer, "Node", "MoveTan", MoveTanRequest{id, location, rotation, time}, &ok)
+			if err != nil {
+				log.Println(err)
+			}
+		}(player.ID)
 	}
 
 	game.notify()

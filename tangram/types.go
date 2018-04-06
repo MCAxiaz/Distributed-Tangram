@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"../lamport"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 // GameState is a struct that holds the state of a game.
@@ -89,10 +90,10 @@ type Player struct {
 
 // PlayerID is the ID of a Player
 // A valid ID must be non-negative
-type PlayerID = int
+type PlayerID = peer.ID
 
 // NoPlayer is the PlayerID of an uncontrolled tan
-const NoPlayer PlayerID = -1
+const NoPlayer PlayerID = ""
 
 // ShapeType is the type of a Tan or Solution Tan
 

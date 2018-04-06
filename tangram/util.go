@@ -30,7 +30,6 @@ func (game *Game) dropPlayer(id PlayerID) error {
 			copy(game.state.Players[i:], game.state.Players[i+1:])
 			game.state.Players[len(game.state.Players)-1] = nil
 			game.state.Players = game.state.Players[:len(game.state.Players)-1]
-			game.pool.dropConnection(id)
 
 			return nil
 		}
