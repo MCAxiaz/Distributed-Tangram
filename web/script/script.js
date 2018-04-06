@@ -21,13 +21,35 @@ function renderTan(model, node) {
         d += `${command} ${point.x} ${point.y} `;
     });
     d += "Z";
-    
+
     node.id = id;
     node.setAttribute('fill', model.shape.fill);
     node.setAttribute('stroke', model.shape.stroke);
+    if (model.Matched) {
+      node.setAttribute('stroke', 'green');
+    }
+
     node.setAttribute('transform', transform);
     node.setAttribute('d', d);
     node.setAttribute('class', 'draggable');
+    return node
+}
+
+function renderTargetTan(model, offset, node) {
+    var transform = `translate(${model.location.x + offset.x}, ${model.location.y + offset.y}) rotate(${model.rotation})`;
+    var d = "";
+    model.shape.points.forEach(function(point, i) {
+        var command = i == 0 ? "M" : "L";
+        d += `${command} ${point.x} ${point.y} `;
+    });
+    d += "Z";
+
+    node.setAttribute('fill', 'grey');
+    node.setAttribute('stroke', 'grey');
+    node.setAttribute('stroke-width', 2);
+    node.setAttribute('stroke-linejoin', 'round');
+    node.setAttribute('transform', transform);
+    node.setAttribute('d', d);
     return node
 }
 
@@ -57,6 +79,14 @@ document.addEventListener("DOMContentLoaded", function(e) {
         }
     }
 
+    function renderTarget(config) {
+      for (let ttan of config.targets) {
+        let node = document.createElementNS(view.namespaceURI, "path");
+        renderTargetTan(ttan, config.Offset, node)
+        view.appendChild(node);
+      }
+    }
+
     socket = openSocket();
     socket.addEventListener("message", function(e) {
         dump.innerHTML = e.data
@@ -70,6 +100,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             config = message.data;
             view.setAttribute("width", config.Size.x)
             view.setAttribute("height", config.Size.y)
+            renderTarget(config);
             break;
         }
     });
@@ -94,7 +125,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         var tan = state.tans.find(function(tan) {
             return tan.id == id
         });
-        
+
         var startTanPos = {
             x: tan.location.x,
             y: tan.location.y,
@@ -169,5 +200,5 @@ document.addEventListener("DOMContentLoaded", function(e) {
 })
 
 function rotate(r, d) {
-    return (r + d * 5 + 720) % 360;
+    return (r + d * 15 + 720) % 360;
 }

@@ -144,6 +144,48 @@ func initState(config *GameConfig, player *Player) (state *GameState) {
 	return
 }
 
+// Returns the gamestate with solved true if solved, false otherwise.
+func checkSolution(config *GameConfig, state *GameState) {
+	numMatched := 0
+	tanMap := make(map[ShapeType][]int)
+
+	//first sort tans into types
+	for i, tan := range state.Tans {
+		tanMap[tan.ShapeType] = append(tanMap[tan.ShapeType], i)
+		tan.Matched = false
+	}
+
+	// Match based on ShapeType
+	for _, target := range config.Targets {
+		numMatched += matchMultiple(state, config, tanMap[target.ShapeType], target)
+		// switch target.ShapeType {
+		// case MTri:
+		// case Cube:
+		// case Pgram:
+		// }
+	}
+	if numMatched == len(config.Targets) {
+		state.Solved = true
+	} else {
+		state.Solved = false
+	}
+}
+
+//returns 1 if matched, 0 otherwise.
+func matchMultiple(state *GameState, config *GameConfig, indexes []int, target *TargetTan) int {
+	for _, index := range indexes {
+		if isMatch(config, state.Tans[index], target) {
+			state.Tans[index].Matched = true
+			return 1
+		}
+	}
+	return 0
+}
+
+func isMatch(config *GameConfig, tan *Tan, target *TargetTan) bool {
+	return withinMargin(add(target.Location, config.Offset), tan.Location, config.Margin) && tan.Rotation == target.Rotation
+}
+
 // Subscribe returns a channel that outputs a value when the game state is updated
 func (game *Game) Subscribe() chan bool {
 	channel := make(chan bool, 1)
@@ -177,6 +219,7 @@ func (game *Game) notify() {
 		default:
 		}
 	}
+	checkSolution(game.config, game.state)
 }
 
 // GetState retrieves the current state of the board
@@ -374,6 +417,7 @@ func (game *Game) witnessTan(newTan *Tan) {
 		tan.Rotation = newTan.Rotation
 		tan.Player = newTan.Player
 	}
+	checkSolution(game.config, game.state)
 }
 
 func (game *Game) witnessState(state *GameState) {
@@ -390,4 +434,6 @@ func (game *Game) witnessState(state *GameState) {
 
 		game.connectToPeer(player.Addr)
 	}
+
+	checkSolution(game.config, state)
 }
