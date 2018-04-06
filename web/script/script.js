@@ -27,15 +27,13 @@ function renderTan(model, node) {
     node.id = id;
     node.setAttribute('fill', model.shape.fill);
     // Check if tan is being held by a player, and if it is, show that player's ID on it
-    console.log(state.tans[model.id-1]);
     if (!state.tans[model.id-1]) {
         console.log("No such tan.");
     }
-    console.log(state.tans[model.id-1].player)
     if (state.tans[model.id-1].player !== NO_PLAYER) {
         // Render player ID to tan
         var txtPath = document.getElementById(`tan-${model.id}`);
-        txtPath.innerHTML(state.tans[model.id-1].player);
+        txtPath.innerHTML = state.tans[model.id-1].player;
     }
     node.setAttribute('stroke', model.shape.stroke);
     if (model.Matched) {
