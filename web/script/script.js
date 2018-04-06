@@ -12,6 +12,8 @@ function openSocket() {
     return socket;
 }
 
+const NO_PLAYER = -1;
+
 function renderTan(model, node) {
     var id = `tan-${model.id}`
     var transform = `translate(${model.location.x}, ${model.location.y}) rotate(${model.rotation})`;
@@ -25,7 +27,13 @@ function renderTan(model, node) {
     node.id = id;
     node.setAttribute('fill', model.shape.fill);
     // TODO: Check if tan is locked first, then decide on the fill opacity value
-    
+    if (!state.tans[model.id]) {
+        console.log("No such tan.");
+    }
+    console.log(state.tans[model.id-1].player)
+    if (state.tans[model.id-1].player !== NO_PLAYER) {
+        node.setAttribute('fill-opacity', '0.5');
+    }
     node.setAttribute('stroke', model.shape.stroke);
     if (model.Matched) {
       node.setAttribute('stroke', 'green');
@@ -117,7 +125,19 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return false;
         }
 
-        // TODO: Check if tan is already locked
+        // TODO: Check if tan is already held by someone else
+        var tanObj = state.tans[tanID-1];
+        if (!tanObj) {
+            console.log("Tan does not exist.");
+            return false;
+        }
+
+        if (tanObj.player !== NO_PLAYER) {
+            console.log("Another player is already holding onto the tan.");
+            return false;
+        } else {
+            tanObj.player = player.ID;
+        }
         
         // Change path's fill opacity to half
         tan.setAttribute("fill-opacity", "0.5");
@@ -145,6 +165,13 @@ document.addEventListener("DOMContentLoaded", function(e) {
         }
 
         // TODO: Set tan to unlocked
+        var tanObj = state.tans[tanID-1];
+        if (!tanObj) {
+            console.log("There exists no such tan.");
+            return false;
+        }
+
+        tanObj.player = NO_PLAYER;
 
         // Restore path's fill opacity to 1
         tan.setAttribute("fill-opacity", "1");
@@ -186,9 +213,11 @@ document.addEventListener("DOMContentLoaded", function(e) {
             view.setAttribute("width", config.Size.x)
             view.setAttribute("height", config.Size.y)
             renderTarget(config);
+            gameControls();
             break;
         case "player":
             player = message.data;
+            console.log(`[Player] ID ${player.ID}`);
             break;
         }
     });
@@ -213,8 +242,6 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return tan.id == id
         });
 
-        // TODO: The player name used here is incorrect.
-        // Is there a data structure on the frontend that stores the player who is playing the game on that node?
         var locked = lockTan(tan.id);
         if (!locked) {
             return;
@@ -300,4 +327,12 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
 function rotate(r, d) {
     return (r + d * 15 + 720) % 360;
+}
+
+function gameControls() {
+    console.log("Use the mouse to click and hold on a tan to take possession of it.");
+    console.log("Once you are holding onto the tan, you can drag it to a different place by moving the mouse.");
+    console.log("Use 'x' while holding the tan to rotate it clockwise.");
+    console.log("Use 'z' while holding the tan to rotate it counter-clockwise.");
+    console.log("Have fun! :)");
 }
