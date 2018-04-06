@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/rpc"
+	"sync"
 	"time"
 
 	"../lamport"
@@ -11,6 +12,7 @@ import (
 
 // Game is the public interface of a tangram game
 type Game struct {
+	lock        sync.RWMutex
 	state       *GameState
 	config      *GameConfig
 	node        *Node
@@ -158,11 +160,6 @@ func checkSolution(config *GameConfig, state *GameState) {
 	// Match based on ShapeType
 	for _, target := range config.Targets {
 		numMatched += matchMultiple(state, config, tanMap[target.ShapeType], target)
-		// switch target.ShapeType {
-		// case MTri:
-		// case Cube:
-		// case Pgram:
-		// }
 	}
 	if numMatched == len(config.Targets) {
 		state.Solved = true
@@ -224,12 +221,18 @@ func (game *Game) notify() {
 
 // GetState retrieves the current state of the board
 func (game *Game) GetState() *GameState {
-	return game.state
+	game.lock.RLock()
+	stateCopy := copyState(game.state)
+	game.lock.RUnlock()
+	return stateCopy
 }
 
 // GetTime returns the time since the game started
 func (game *Game) GetTime() time.Duration {
-	return time.Now().Sub(game.state.Timer)
+	game.lock.RLock()
+	t := time.Now().Sub(game.state.Timer)
+	game.lock.RUnlock()
+	return t
 }
 
 // GetConfig returns the config of the game
@@ -258,13 +261,14 @@ func (game *Game) syncTime(player *Player) (err error) {
 	rtt := d2 - d1
 
 	newTime := t0.Add(-rtt / 2).Add(-d2)
-	// TODO Add a debug flag?
+	game.lock.Lock()
 	if true {
 		oldTime := game.state.Timer
 		d := newTime.Sub(oldTime).Nanoseconds()
 		log.Printf("Time Sync with Player %d, d = %d\n", player.ID, d)
 	}
 	game.state.Timer = newTime
+	game.lock.Unlock()
 
 	return
 }
@@ -274,10 +278,18 @@ func (game *Game) syncTime(player *Player) (err error) {
 // This function is NOT guaranteed thread safe
 func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 	log.Printf("[ObtainTan] ID = %d\n", id)
+	game.lock.Lock()
 	tan := game.state.getTan(id)
 	if tan == nil {
 		err = fmt.Errorf("[ObtainTan] Requested tan ID = %d is not found", id)
+		game.lock.Unlock()
 		return
+	}
+
+	if tan.Player != NoPlayer && tan.Player != game.node.player.ID {
+		log.Printf("[ObtainTan] Obtaining TanID = %d failed. Already controlled by %d", id, tan.Player)
+		game.lock.Unlock()
+		return false, nil
 	}
 
 	playerID := game.node.player.ID
@@ -286,6 +298,7 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 	}
 
 	time := tan.Clock.Increment()
+	game.lock.Unlock()
 
 	// Ask everyone for the tan!
 	n := 0
@@ -326,7 +339,9 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 		}
 	}
 
+	game.lock.Lock()
 	tan.Player = playerID
+	game.lock.Unlock()
 	game.notify()
 	return
 }
@@ -370,13 +385,14 @@ func (game *Game) MoveTan(id TanID, location Point, rotation Rotation) (ok bool,
 }
 
 func (game *Game) lockTan(tanID TanID, playerID PlayerID, time lamport.Time) (ok bool, err error) {
+	game.lock.Lock()
+	defer game.lock.Unlock()
 	tan := game.state.getTan(tanID)
 	if tan == nil {
 		err = fmt.Errorf("[lockTan] Requested tan ID = %d is not found", tanID)
 		return
 	}
 
-	// TODO we need lock around all the updates
 	ok = tan.Clock.Witness(time)
 	if ok {
 		tan.Player = playerID
@@ -387,6 +403,8 @@ func (game *Game) lockTan(tanID TanID, playerID PlayerID, time lamport.Time) (ok
 }
 
 func (game *Game) moveTan(tanID TanID, location Point, rotation Rotation, time lamport.Time) (ok bool, err error) {
+	game.lock.Lock()
+	defer game.lock.Unlock()
 	tan := game.state.getTan(tanID)
 	if tan == nil {
 		err = fmt.Errorf("[moveTan] Requested tan ID = %d is not found", tanID)
@@ -421,6 +439,8 @@ func (game *Game) witnessTan(newTan *Tan) {
 }
 
 func (game *Game) witnessState(state *GameState) {
+	game.lock.Lock()
+	defer game.lock.Unlock()
 	for _, tan := range state.Tans {
 		game.witnessTan(tan)
 	}
