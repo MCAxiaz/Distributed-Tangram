@@ -39,14 +39,14 @@ function renderTan(model, node) {
 // Attaches textPath to SVG for player's name
 function attachPlayerNameTextToSVG(tanID, playerName) {
     var svg = document.getElementById("view");
-    var use = document.createElement("use");
+    var use = document.createElementNS(view.namespaceURI, "use");
 
-    use.setAttribute("xlink:href", `#${tanID}`);
-    var txt = document.createElement("text");
+    use.setAttribute("href", `#${tanID}`);
+    var txt = document.createElementNS(view.namespaceURI, "text");
     txt.setAttribute("font-family", "Verdana");
     txt.setAttribute("font-size", "42.5");
-    var txtPath = document.createElement("textPath");
-    txtPath.setAttribute("xlink:href", `#${tanID}`);
+    var txtPath = document.createElementNS(view.namespaceURI, "textPath");
+    txtPath.setAttribute("href", `#${tanID}`);
 
     if (playerName) {
         txtPath.id = `txtPath-${tanID}-${playerName}`;
@@ -85,9 +85,7 @@ var state;
 var player;
 document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
-    view.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    view.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
-    var defs = document.createElement("defs");
+    var defs = document.createElementNS(view.namespaceURI, "defs");
     defs.id = "defs";
     //view.appendChild(defs);
     var timer = document.getElementById("timer");
