@@ -2,11 +2,9 @@ package tangram
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
-	"net/http"
 	"net/rpc"
 	"strings"
 	"time"
@@ -49,13 +47,14 @@ type MoveTanRequest struct {
 }
 
 // startNode instantiates the RPC server which will allow for communication between client nodes
-func startNode(port int) (node *Node, err error) {
-	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%v", port))
+func startNode(addr string) (node *Node, err error) {
+	port := strings.Split(addr, ":")[1]
+	resolvedAddr, err := net.ResolveTCPAddr("tcp", addr[len(addr)-len(port)-1:])
 	if err != nil {
 		return
 	}
 
-	inbound, err := net.ListenTCP("tcp", addr)
+	inbound, err := net.ListenTCP("tcp", resolvedAddr)
 	if err != nil {
 		return
 	}
@@ -63,29 +62,12 @@ func startNode(port int) (node *Node, err error) {
 	node = new(Node)
 	node.listener = inbound
 
-	// Find the outbound IP address to listen to
-	res, err := http.Get("https://wtfismyip.com/text")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer res.Body.Close()
-	ipBytes, err := ioutil.ReadAll(res.Body)
-	ip := strings.TrimSpace(string(ipBytes[:len(ipBytes)]))
-
-	fmt.Println(ip)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	localAddr := fmt.Sprintf("%v:%v", ip, port)
-	node.player = newPlayer(localAddr)
+	node.player = newPlayer(addr)
 
 	server := rpc.NewServer()
 	server.Register(node)
 	go server.Accept(inbound)
-	log.Printf("Listening on %s as %d\n", localAddr, node.player.ID)
+	log.Printf("Listening on %s as %d\n", addr, node.player.ID)
 	return
 }
 
