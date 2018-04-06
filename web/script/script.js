@@ -126,7 +126,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return false;
         }
 
-        // TODO: Check if tan is already held by someone else
+        // Check if tan is already held by someone else
         var tanObj = state.tans[tanID-1];
         if (!tanObj) {
             console.log("Tan does not exist.");
@@ -165,7 +165,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return false;
         }
 
-        // TODO: Set tan to unlocked
+        // Set tan to unlocked
         var tanObj = state.tans[tanID-1];
         if (!tanObj) {
             console.log("There exists no such tan.");
