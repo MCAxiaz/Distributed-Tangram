@@ -241,6 +241,7 @@ func (game *Game) GetConfig() *GameConfig {
 }
 
 func (game *Game) syncTime(player *Player) (err error) {
+	log.Printf("[syncTime] Start with player %d", player.ID)
 	client, err := rpc.Dial("tcp", player.Addr)
 	if err != nil {
 		return
@@ -251,11 +252,13 @@ func (game *Game) syncTime(player *Player) (err error) {
 	if err != nil {
 		return
 	}
+	log.Printf("[syncTime] Got first response")
 
 	err = client.Call("Node.GetTime", 0, &d2)
 	if err != nil {
 		return
 	}
+	log.Printf("[syncTime] Got second response")
 
 	t0 := time.Now()
 	rtt := d2 - d1
@@ -439,8 +442,6 @@ func (game *Game) witnessTan(newTan *Tan) {
 }
 
 func (game *Game) witnessState(state *GameState) {
-	game.lock.Lock()
-	defer game.lock.Unlock()
 	for _, tan := range state.Tans {
 		game.witnessTan(tan)
 	}
@@ -449,7 +450,7 @@ func (game *Game) witnessState(state *GameState) {
 			continue
 		}
 
-		log.Printf("[witnessState] Adding Player %d", player.ID)
+		log.Printf("[witnessState] Adding Player %d at %s", player.ID, player.Addr)
 		game.state.Players = append(game.state.Players, player)
 
 		game.connectToPeer(player.Addr)
