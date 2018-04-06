@@ -43,11 +43,9 @@ function attachPlayerNameTextToSVG(tanID) {
 
     use.setAttribute("href", `#${tanID}`);
     var txt = document.createElementNS(view.namespaceURI, "text");
-    //txt.id = `txt-${tanID}`;
     txt.setAttribute("font-family", "Verdana");
     txt.setAttribute("font-size", "12");
-    //txt.setAttribute("href", `#${tanID}`);
-    //txt.innerHTML = "";
+
     var txtPath = document.createElementNS(view.namespaceURI, "textPath");
     txtPath.setAttribute("href", `#${tanID}`);
     
@@ -135,15 +133,6 @@ document.addEventListener("DOMContentLoaded", function(e) {
         
         txtPath.innerHTML = player.ID;
         txtPath.id = `txtPath-tan-${tanID}-${player.ID}`;
-
-        /*var txt = document.getElementById(`txt-tan-${tanID}`);
-        if (!txt) {
-            console.log(`No such txt with tan ${tanID}`);
-            return false;
-        }
-
-        txt.innerHTML = player.ID;
-        txt.id = `txt-tan-${tanID}-${player.ID}`;*/
         
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${player.ID}.`);
 
@@ -172,15 +161,6 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
         txtPath.innerHTML = "";
         txtPath.id = `txtPath-tan-${tanID}`;
-
-        /*var txt = document.getElementById(`txt-tan-${tanID}-${player.ID}`);
-        if (!txt) {
-            console.log(`No such txt with tan ${tanID} and player ${player.ID}`);
-            return false;
-        }
-
-        txt.innerHTML = "";
-        txt.id = `txtPath-tan-${tanID}`;*/
 
         console.log(`[Unlock tan] ${tanID}`);
 
