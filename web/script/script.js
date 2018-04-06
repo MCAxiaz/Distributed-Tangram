@@ -37,24 +37,22 @@ function renderTan(model, node) {
 }
 
 // Attaches textPath to SVG for player's name
-function attachPlayerNameTextToSVG(tanID, playerName) {
+function attachPlayerNameTextToSVG(tanID) {
     var svg = document.getElementById("view");
     var use = document.createElementNS(view.namespaceURI, "use");
 
     use.setAttribute("href", `#${tanID}`);
     var txt = document.createElementNS(view.namespaceURI, "text");
+    //txt.id = `txt-${tanID}`;
     txt.setAttribute("font-family", "Verdana");
-    txt.setAttribute("font-size", "42.5");
+    txt.setAttribute("font-size", "12");
+    //txt.setAttribute("href", `#${tanID}`);
+    //txt.innerHTML = "";
     var txtPath = document.createElementNS(view.namespaceURI, "textPath");
     txtPath.setAttribute("href", `#${tanID}`);
-
-    if (playerName) {
-        txtPath.id = `txtPath-${tanID}-${playerName}`;
-        txtPath.innerText(playerName);
-    } else {
-        txtPath.id = `txtPath-${tanID}`;
-        txtPath.innerText = "";
-    }
+    
+    txtPath.id = `txtPath-${tanID}`;
+    txtPath.innerHTML = "";
 
     txt.appendChild(txtPath);
     svg.appendChild(use);
@@ -87,18 +85,18 @@ document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
     var defs = document.createElementNS(view.namespaceURI, "defs");
     defs.id = "defs";
-    //view.appendChild(defs);
+    view.appendChild(defs);
     var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
 
     function getTan(model) {
         var tan = view.getElementById(`tan-${model.id}`);
-        //var defs = view.getElementById("defs");
+        var defs = view.getElementById("defs");
         if (!tan) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
-            attachPlayerNameTextToSVG(tan.id, tan.playerName);
-            view.appendChild(tan);
+            attachPlayerNameTextToSVG(tan.id);
+            defs.appendChild(tan);
             tan.addEventListener("pointerdown", onMouseDown)
         }
         return tan;
@@ -135,8 +133,17 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return false;
         }
         
-        txtPath.innerText = player.ID;
+        txtPath.innerHTML = player.ID;
         txtPath.id = `txtPath-tan-${tanID}-${player.ID}`;
+
+        /*var txt = document.getElementById(`txt-tan-${tanID}`);
+        if (!txt) {
+            console.log(`No such txt with tan ${tanID}`);
+            return false;
+        }
+
+        txt.innerHTML = player.ID;
+        txt.id = `txt-tan-${tanID}-${player.ID}`;*/
         
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${player.ID}.`);
 
@@ -163,8 +170,17 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return false;
         }
 
-        txtPath.innerText = "";
+        txtPath.innerHTML = "";
         txtPath.id = `txtPath-tan-${tanID}`;
+
+        /*var txt = document.getElementById(`txt-tan-${tanID}-${player.ID}`);
+        if (!txt) {
+            console.log(`No such txt with tan ${tanID} and player ${player.ID}`);
+            return false;
+        }
+
+        txt.innerHTML = "";
+        txt.id = `txtPath-tan-${tanID}`;*/
 
         console.log(`[Unlock tan] ${tanID}`);
 
