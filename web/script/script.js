@@ -33,7 +33,11 @@ function renderTan(model, node) {
     if (state.tans[model.id-1].player !== NO_PLAYER) {
         // Render player ID to tan
         var txtPath = document.getElementById(`tan-${model.id}`);
-        txtPath.innerHTML = state.tans[model.id-1].player;
+        if (!txtPath) {
+            console.log(`textPath for tan ${model.id} does not exist.`);
+        } else {
+            txtPath.innerHTML = state.tans[model.id-1].player;
+        }
     }
     node.setAttribute('stroke', model.shape.stroke);
     if (model.Matched) {
