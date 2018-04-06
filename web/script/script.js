@@ -139,6 +139,14 @@ document.addEventListener("DOMContentLoaded", function(e) {
         } else {
             tanObj.player = player.ID;
         }
+
+        // Send lock tan request to backend
+        socket.send(JSON.stringify({
+            type: "LockTan",
+            tan: tanID,
+            player: player.ID,
+            time: state.tans[tanID-1].clock
+        }));
         
         // Change path's fill opacity to half
         tan.setAttribute("fill-opacity", "0.5");
