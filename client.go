@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"./tangram"
@@ -24,16 +24,9 @@ var upgrader = websocket.Upgrader{
 
 func main() {
 	remoteAddr := flag.String("c", "", "remote client to connect to")
-	rpcPort := flag.Int("p", 0, "address to expose")
+	rpcPort := flag.Int("p", 9000, "address to expose")
 
 	flag.Parse()
-
-	if len(flag.Args()) != 1 {
-		fmt.Println("usage: go run client.go [-c remote-address] [-p rpc-port] [address]")
-		return
-	}
-
-	addr := flag.Args()[0]
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -43,20 +36,26 @@ func main() {
 	}
 
 	// Find the outbound IP address to listen to
-	conn, err := net.Dial("udp", "1.1.1.1:80")
+	res, err := http.Get("https://wtfismyip.com/text")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
-	defer conn.Close()
+	defer res.Body.Close()
+	ipBytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	localRPCAddr := fmt.Sprintf("%v:%v", conn.LocalAddr().(*net.UDPAddr).IP.String(), *rpcPort)
+	ip := strings.TrimSpace(string(ipBytes[:len(ipBytes)]))
+
+	rpcAddr := fmt.Sprintf("%v:%v", ip, *rpcPort)
 
 	var game *tangram.Game
 	if *remoteAddr == "" {
-		game, err = tangram.NewGame(config, localRPCAddr)
+		game, err = tangram.NewGame(config, rpcAddr)
 	} else {
-		game, err = tangram.ConnectToGame(*remoteAddr, localRPCAddr)
+		game, err = tangram.ConnectToGame(*remoteAddr, rpcAddr)
 	}
 
 	if err != nil {
@@ -66,7 +65,18 @@ func main() {
 	http.HandleFunc("/ws", getWebSocketHandler(game))
 	http.Handle("/", http.FileServer(http.Dir("web")))
 
-	fmt.Println("Listening to requests at addr", addr)
+	var addr string
+	if len(flag.Args()) == 1 {
+		addr = flag.Args()[0]
+		fmt.Println("Listening to requests at addr", addr)
+	} else if len(flag.Args()) == 0 {
+		addr = ":8080"
+		fmt.Println("[Default] Listening to requests at addr", addr)
+	} else {
+		fmt.Println("usage: go run client.go [-c remote-address] [-p rpc-port] [address]")
+		return
+	}
+
 	err = http.ListenAndServe(addr, nil)
 
 	if err != nil {

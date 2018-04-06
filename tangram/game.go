@@ -19,8 +19,8 @@ type Game struct {
 }
 
 // NewGame starts a new Game
-func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
-	node, err := startNode(localAddr)
+func NewGame(config *GameConfig, addr string) (game *Game, err error) {
+	node, err := startNode(addr)
 	if err != nil {
 		return
 	}
@@ -40,18 +40,18 @@ func NewGame(config *GameConfig, localAddr string) (game *Game, err error) {
 	node.game = game
 
 	go game.heartbeat(state.Players)
-	
+
 	return
 }
 
 // ConnectToGame connects to an existing game at addr
-func ConnectToGame(addr string, localAddr string) (game *Game, err error) {
-	node, err := startNode(localAddr)
+func ConnectToGame(remoteAddr string, addr string) (game *Game, err error) {
+	node, err := startNode(addr)
 	if err != nil {
 		return
 	}
 
-	client, err := rpc.Dial("tcp", addr)
+	client, err := rpc.Dial("tcp", remoteAddr)
 	if err != nil {
 		return
 	}
@@ -98,7 +98,7 @@ func (game *Game) heartbeat(players []*Player) {
 
 			go game.pingPlayer(player.ID, client)
 		}
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -109,7 +109,6 @@ func (game *Game) pingPlayer(id PlayerID, client *rpc.Client) {
 		game.dropPlayer(id)
 	}
 }
-
 
 func (game *Game) connectToPeer(addr string) (err error) {
 	client, err := rpc.Dial("tcp", addr)
