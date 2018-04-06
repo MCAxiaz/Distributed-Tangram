@@ -3,6 +3,7 @@ package tangram
 import (
 	"bytes"
 	"encoding/gob"
+	"log"
 	"math"
 )
 
@@ -25,8 +26,11 @@ func (state *GameState) getPlayer(id PlayerID) *Player {
 }
 
 func (game *Game) dropPlayer(id PlayerID) error {
+	game.lock.Lock()
+	defer game.lock.Unlock()
 	for i, player := range game.state.Players {
 		if player.ID == id {
+			log.Printf("[dropPlayer] Dropping %s", player.Name)
 			copy(game.state.Players[i:], game.state.Players[i+1:])
 			game.state.Players[len(game.state.Players)-1] = nil
 			game.state.Players = game.state.Players[:len(game.state.Players)-1]
@@ -35,6 +39,22 @@ func (game *Game) dropPlayer(id PlayerID) error {
 		}
 	}
 	return nil
+}
+
+func (game *Game) addPlayer(newPlayer *Player) (ok bool) {
+	log.Printf("[addPlayer] Adding %s", newPlayer.Name)
+	game.lock.Lock()
+	defer game.lock.Unlock()
+	ok = true
+	for _, player := range game.state.Players {
+		if player.ID == newPlayer.ID {
+			log.Printf("[addPlayer] Found duplicate %s\n", newPlayer.Name)
+			ok = false
+			return
+		}
+	}
+	game.state.Players = append(game.state.Players, newPlayer)
+	return
 }
 
 func withinMargin(a Point, b Point, margin int32) bool {

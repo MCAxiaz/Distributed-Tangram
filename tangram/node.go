@@ -102,6 +102,7 @@ func startNode(port int) (node *Node, err error) {
 
 	player := Player{
 		ID:   pid,
+		Name: pid.Pretty(),
 		Addr: pubMaddr.String(),
 	}
 
@@ -123,22 +124,15 @@ func startNode(port int) (node *Node, err error) {
 // Connect connects to a node with the new player's information
 func (node *Node) Connect(ctx context.Context, req *ConnectRequest, res *ConnectResponse) (err error) {
 	fmt.Println("[Connect] Player Addr:", req.Player.Addr)
-	for _, player := range node.game.state.Players {
-		if req.Player.ID == player.ID {
-			return fmt.Errorf("Player ID = %s is already in the game", player.ID)
-		}
-	}
 
-	node.game.state.Players = append(node.game.state.Players, &req.Player)
+	ok := node.game.addPlayer(&req.Player)
+	if !ok {
+		return fmt.Errorf("Player ID = %s is already in the game", req.Player.ID)
+	}
 	node.addPeer(req.Player.Addr)
 	*res = ConnectResponse{node.game.GetState(), node.game.GetConfig(), node.player}
 	return
 }
-
-// func (node *Node) addPeer(player *Player) (err error) {
-// 	node.host.Network().Peerstore().AddAddr(player.ID, player.Addr, peerstore.PermanentAddrTTL)
-// 	return
-// }
 
 func (node *Node) addPeer(addr string) (player *Player, err error) {
 	ma, err := multiaddr.NewMultiaddr(addr)
@@ -166,6 +160,7 @@ func (node *Node) addPeer(addr string) (player *Player, err error) {
 
 	player = &Player{
 		ID:   peerid,
+		Name: peerid.Pretty(),
 		Addr: ma.String(),
 	}
 	return
@@ -204,6 +199,6 @@ func (node *Node) Ping(ctx context.Context, incID PlayerID, ok *bool) (err error
 	return
 }
 
-func (node *Node) call(dest peer.ID, svcName string, svcMethod string, args, reply interface{}) error {
+func (node *Node) call(dest PlayerID, svcName string, svcMethod string, args, reply interface{}) error {
 	return node.client.Call(dest, svcName, svcMethod, args, reply)
 }

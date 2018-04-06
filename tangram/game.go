@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"../lamport"
-	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 // Game is the public interface of a tangram game
@@ -70,6 +69,7 @@ func ConnectToGame(remoteAddr string, port int) (game *Game, err error) {
 		subscribers: make([]chan bool, 0),
 	}
 	node.game = game
+	game.addPlayer(player)
 
 	game.witnessState(res.State)
 	game.syncTime(state.getPlayer(res.Player.ID))
@@ -217,10 +217,8 @@ func (game *Game) GetState() *GameState {
 
 // GetTime returns the time since the game started
 func (game *Game) GetTime() time.Duration {
-	game.lock.RLock()
-	t := time.Now().Sub(game.state.Timer)
-	game.lock.RUnlock()
-	return t
+	fmt.Println(time.Now().Sub(game.state.Timer).String())
+	return time.Now().Sub(game.state.Timer)
 }
 
 // GetConfig returns the config of the game
@@ -234,13 +232,13 @@ func (game *Game) syncTime(player *Player) (err error) {
 	if err != nil {
 		return
 	}
-	log.Printf("[syncTime] Got first response")
+	log.Printf("[syncTime] Got first response %s", d1.String())
 
 	err = game.node.call(player.ID, "Node", "GetTime", 0, &d2)
 	if err != nil {
 		return
 	}
-	log.Printf("[syncTime] Got second response")
+	log.Printf("[syncTime] Got second response %s", d2.String())
 
 	t0 := time.Now()
 	rtt := d2 - d1
@@ -249,8 +247,8 @@ func (game *Game) syncTime(player *Player) (err error) {
 	game.lock.Lock()
 	if true {
 		oldTime := game.state.Timer
-		d := newTime.Sub(oldTime).Nanoseconds()
-		log.Printf("Time Sync with Player %s, d = %d\n", player.ID, d)
+		d := newTime.Sub(oldTime)
+		log.Printf("Time Sync with Player %s, d = %s\n", player.Name, d.String())
 	}
 	game.state.Timer = newTime
 	game.lock.Unlock()
@@ -293,7 +291,7 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 			continue
 		}
 
-		go func(player PlayerID, peer peer.ID) {
+		go func(player PlayerID, peer PlayerID) {
 			var ok bool
 			game.node.call(player, "Node", "LockTan", LockTanRequest{id, player, time}, &ok)
 			// TODO handle error properly?
@@ -355,7 +353,7 @@ func (game *Game) MoveTan(id TanID, location Point, rotation Rotation) (ok bool,
 			continue
 		}
 
-		go func(peer peer.ID) {
+		go func(peer PlayerID) {
 			var ok bool
 			err := game.node.call(peer, "Node", "MoveTan", MoveTanRequest{id, location, rotation, time}, &ok)
 			if err != nil {
@@ -431,8 +429,8 @@ func (game *Game) witnessState(state *GameState) {
 			continue
 		}
 
-		log.Printf("[witnessState] Adding Player %s at %s", player.ID, player.Addr)
-		game.state.Players = append(game.state.Players, player)
+		log.Printf("[witnessState] Adding Player %s at %s", player.Name, player.Addr)
+		game.addPlayer(player)
 
 		game.connectToPeer(player.Addr)
 	}
