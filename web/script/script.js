@@ -39,6 +39,8 @@ function attachPlayerNameTextToSVG(tanID, playerName) {
 
     use.setAttribute("xlink:href", `#${tanID}`);
     var txt = document.createElement("text");
+    txt.setAttribute("font-family", "Verdana");
+    txt.setAttribute("font-size", "42.5");
     var txtPath = document.createElement("textPath");
     txtPath.setAttribute("xlink:href", `#${tanID}`);
 
