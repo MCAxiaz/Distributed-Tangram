@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// Find the outbound IP address to listen to
-	res, err := http.Get("https://ipv4.wtfismyip.com/text")
+	res, err := http.Get("https://ipv6.wtfismyip.com/text")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -49,7 +49,7 @@ func main() {
 
 	ip := strings.TrimSpace(string(ipBytes[:len(ipBytes)]))
 
-	rpcAddr := fmt.Sprintf("%v:%v", ip, *rpcPort)
+	rpcAddr := fmt.Sprintf("[%v]:%v", ip, *rpcPort)
 
 	var game *tangram.Game
 	if *remoteAddr == "" {
