@@ -74,7 +74,7 @@ func main() {
 		addr = ":8080"
 		fmt.Println("[Default] Listening to requests at addr", addr)
 	} else {
-		fmt.Println("usage: go run client.go [-c remote-address] [-p rpc-port] [address]")
+		fmt.Println("usage: go run client.go [-i identifier] [-c remote-address] [-p rpc-port] [address]")
 		return
 	}
 
