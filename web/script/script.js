@@ -222,11 +222,11 @@ document.addEventListener("DOMContentLoaded", function(e) {
             view.setAttribute("width", config.Size.x)
             view.setAttribute("height", config.Size.y)
             renderTarget(config);
-            gameControls();
             break;
         case "player":
             player = message.data;
-            console.log(`[Player] ID ${player.ID}`);
+            var currentPlayerID = document.getElementById("current-player-id");
+            currentPlayerID.innerHTML = player.ID;
             break;
         }
     });
@@ -336,12 +336,4 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
 function rotate(r, d) {
     return (r + d * 15 + 720) % 360;
-}
-
-function gameControls() {
-    console.log("Use the mouse to click and hold on a tan to take possession of it.");
-    console.log("Once you are holding onto the tan, you can drag it to a different place by moving the mouse.");
-    console.log("Use 'x' while holding the tan to rotate it clockwise.");
-    console.log("Use 'z' while holding the tan to rotate it counter-clockwise.");
-    console.log("Have fun! :)");
 }
