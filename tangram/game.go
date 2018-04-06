@@ -353,9 +353,17 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 // MoveTan does not block and broadcasts the content asynchronously
 func (game *Game) MoveTan(id TanID, location Point, rotation Rotation) (ok bool, err error) {
 	// log.Printf("[MoveTan] ID = %d\n", id)
+	game.lock.Lock()
 	tan := game.state.getTan(id)
 	if tan == nil {
 		err = fmt.Errorf("[ObtainTan] Requested tan ID = %d is not found", id)
+		game.lock.Unlock()
+		return
+	}
+
+	if tan.Player != game.node.player.ID {
+		ok = false
+		game.lock.Unlock()
 		return
 	}
 
@@ -363,6 +371,7 @@ func (game *Game) MoveTan(id TanID, location Point, rotation Rotation) (ok bool,
 	tan.Location = location
 	tan.Rotation = rotation
 	ok = true
+	game.lock.Unlock()
 
 	// Let everyone know!
 	for _, player := range game.state.Players {
