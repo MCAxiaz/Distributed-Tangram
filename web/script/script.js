@@ -103,8 +103,8 @@ document.addEventListener("DOMContentLoaded", function(e) {
         
         if (!tan) {
             tan = document.createElementNS(view.namespaceURI, "path");
-            attachPlayerNameTextToSVG(tan.id);
             renderTan(model, tan);
+            attachPlayerNameTextToSVG(tan.id);
             view.appendChild(tan);
             tan.addEventListener("pointerdown", onMouseDown)
         }
