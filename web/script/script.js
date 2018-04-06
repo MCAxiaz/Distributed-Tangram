@@ -21,11 +21,15 @@ function renderTan(model, node) {
         d += `${command} ${point.x} ${point.y} `;
     });
     d += "Z";
-    
+
     node.id = id;
     node.setAttribute('fill', model.shape.fill);
     // TODO: Check if tan is locked first, then decide on the fill opacity value
     node.setAttribute('stroke', model.shape.stroke);
+    if (model.Matched) {
+      node.setAttribute('stroke', 'green');
+    }
+
     node.setAttribute('transform', transform);
     node.setAttribute('d', d);
     node.setAttribute('class', 'draggable');
@@ -57,6 +61,24 @@ function attachPlayerNameTextToSVG(tanID, playerName) {
     svg.appendChild(txt);
 }
 
+function renderTargetTan(model, offset, node) {
+    var transform = `translate(${model.location.x + offset.x}, ${model.location.y + offset.y}) rotate(${model.rotation})`;
+    var d = "";
+    model.shape.points.forEach(function(point, i) {
+        var command = i == 0 ? "M" : "L";
+        d += `${command} ${point.x} ${point.y} `;
+    });
+    d += "Z";
+
+    node.setAttribute('fill', 'grey');
+    node.setAttribute('stroke', 'grey');
+    node.setAttribute('stroke-width', 2);
+    node.setAttribute('stroke-linejoin', 'round');
+    node.setAttribute('transform', transform);
+    node.setAttribute('d', d);
+    return node
+}
+
 var socket;
 var config;
 var state;
@@ -67,18 +89,18 @@ document.addEventListener("DOMContentLoaded", function(e) {
     view.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
     var defs = document.createElement("defs");
     defs.id = "defs";
-    view.appendChild(defs);
+    //view.appendChild(defs);
     var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
 
     function getTan(model) {
         var tan = view.getElementById(`tan-${model.id}`);
-        var defs = view.getElementById("defs");
+        //var defs = view.getElementById("defs");
         if (!tan) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
             attachPlayerNameTextToSVG(tan.id, tan.playerName);
-            defs.appendChild(tan);
+            view.appendChild(tan);
             tan.addEventListener("pointerdown", onMouseDown)
         }
         return tan;
@@ -149,6 +171,15 @@ document.addEventListener("DOMContentLoaded", function(e) {
         console.log(`[Unlock tan] ${tanID}`);
 
         return true;
+
+    }
+
+    function renderTarget(config) {
+      for (let ttan of config.targets) {
+        let node = document.createElementNS(view.namespaceURI, "path");
+        renderTargetTan(ttan, config.Offset, node)
+        view.appendChild(node);
+      }
     }
 
     socket = openSocket();
@@ -164,6 +195,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             config = message.data;
             view.setAttribute("width", config.Size.x)
             view.setAttribute("height", config.Size.y)
+            renderTarget(config);
             break;
         case "player":
             player = message.data;
@@ -250,7 +282,6 @@ document.addEventListener("DOMContentLoaded", function(e) {
         };
         document.addEventListener("keypress", rotateListener);
 
-
         document.addEventListener("pointerup", function(e) {
             var unlock = unlockTan(id);
             if (!unlock) {
@@ -278,5 +309,5 @@ document.addEventListener("DOMContentLoaded", function(e) {
 })
 
 function rotate(r, d) {
-    return (r + d * 5 + 720) % 360;
+    return (r + d * 15 + 720) % 360;
 }

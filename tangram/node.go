@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net"
 	"net/rpc"
+	"strings"
 	"time"
 
 	"../lamport"
@@ -46,13 +47,14 @@ type MoveTanRequest struct {
 }
 
 // startNode instantiates the RPC server which will allow for communication between client nodes
-func startNode(localAddr string) (node *Node, err error) {
-	addr, err := net.ResolveTCPAddr("tcp", localAddr)
+func startNode(addr string) (node *Node, err error) {
+	port := strings.Split(addr, ":")[1]
+	resolvedAddr, err := net.ResolveTCPAddr("tcp", addr[len(addr)-len(port)-1:])
 	if err != nil {
 		return
 	}
 
-	inbound, err := net.ListenTCP("tcp", addr)
+	inbound, err := net.ListenTCP("tcp", resolvedAddr)
 	if err != nil {
 		return
 	}
@@ -60,13 +62,12 @@ func startNode(localAddr string) (node *Node, err error) {
 	node = new(Node)
 	node.listener = inbound
 
-	localAddr = inbound.Addr().String()
-	node.player = newPlayer(localAddr)
+	node.player = newPlayer(addr)
 
 	server := rpc.NewServer()
 	server.Register(node)
 	go server.Accept(inbound)
-	log.Printf("Listening on %s as %d\n", localAddr, node.player.ID)
+	log.Printf("Listening on %s as %d\n", addr, node.player.ID)
 	return
 }
 
@@ -119,6 +120,7 @@ func (node *Node) MoveTan(req MoveTanRequest, ok *bool) (err error) {
 	return
 }
 
+// Ping simply confirms that the connection is good
 func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
 	//do something
 	*ok = true
