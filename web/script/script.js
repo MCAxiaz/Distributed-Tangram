@@ -25,6 +25,7 @@ function renderTan(model, node) {
     node.id = id;
     node.setAttribute('fill', model.shape.fill);
     // TODO: Check if tan is locked first, then decide on the fill opacity value
+    
     node.setAttribute('stroke', model.shape.stroke);
     if (model.Matched) {
       node.setAttribute('stroke', 'green');
@@ -81,15 +82,12 @@ var state;
 var player;
 document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
-    //var defs = document.createElementNS(view.namespaceURI, "defs");
-    //defs.id = "defs";
-    //view.appendChild(defs);
     var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
 
     function getTan(model) {
         var tan = view.getElementById(`tan-${model.id}`);
-        //var defs = view.getElementById("defs");
+        
         if (!tan) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
@@ -132,7 +130,6 @@ document.addEventListener("DOMContentLoaded", function(e) {
         }
         
         txtPath.innerHTML = player.ID;
-        txtPath.id = `txtPath-tan-${tanID}-${player.ID}`;
         
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${player.ID}.`);
 
@@ -153,14 +150,13 @@ document.addEventListener("DOMContentLoaded", function(e) {
         tan.setAttribute("fill-opacity", "1");
         
         // Remove player name from tan
-        var txtPath = document.getElementById(`txtPath-tan-${tanID}-${player.ID}`);
+        var txtPath = document.getElementById(`txtPath-tan-${tanID}`);
         if (!txtPath) {
-            console.log(`No such txtPath with tan ${tanID} and player ${player.ID}`);
+            console.log(`No such txtPath with tan ${tanID}`);
             return false;
         }
 
         txtPath.innerHTML = "";
-        txtPath.id = `txtPath-tan-${tanID}`;
 
         console.log(`[Unlock tan] ${tanID}`);
 
