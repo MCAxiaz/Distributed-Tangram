@@ -83,20 +83,20 @@ var state;
 var player;
 document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
-    var defs = document.createElementNS(view.namespaceURI, "defs");
-    defs.id = "defs";
-    view.appendChild(defs);
+    //var defs = document.createElementNS(view.namespaceURI, "defs");
+    //defs.id = "defs";
+    //view.appendChild(defs);
     var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
 
     function getTan(model) {
         var tan = view.getElementById(`tan-${model.id}`);
-        var defs = view.getElementById("defs");
+        //var defs = view.getElementById("defs");
         if (!tan) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
             attachPlayerNameTextToSVG(tan.id);
-            defs.appendChild(tan);
+            view.appendChild(tan);
             tan.addEventListener("pointerdown", onMouseDown)
         }
         return tan;
