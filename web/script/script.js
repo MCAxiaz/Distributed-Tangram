@@ -37,10 +37,10 @@ function attachPlayerNameTextToSVG(tanID, playerName) {
     var svg = document.getElementById("view");
     var use = document.createElement("use");
 
-    use.setAttribute("xlink:href", `${tanID}`);
+    use.setAttribute("xlink:href", `#${tanID}`);
     var txt = document.createElement("text");
     var txtPath = document.createElement("textPath");
-    txtPath.setAttribute("xlink:href", `${tanID}`);
+    txtPath.setAttribute("xlink:href", `#${tanID}`);
 
     if (playerName) {
         txtPath.id = `txtPath-${tanID}-${playerName}`;
@@ -63,16 +63,20 @@ document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
     view.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     view.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    var defs = document.createElement("defs");
+    defs.id = "defs";
+    view.appendChild(defs);
     var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
 
     function getTan(model) {
         var tan = view.getElementById(`tan-${model.id}`);
+        var defs = view.getElementById("defs");
         if (!tan) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
             attachPlayerNameTextToSVG(tan.id, tan.playerName);
-            view.appendChild(tan);
+            defs.appendChild(tan);
             tan.addEventListener("pointerdown", onMouseDown)
         }
         return tan;
@@ -113,12 +117,6 @@ document.addEventListener("DOMContentLoaded", function(e) {
         txtPath.id = `txtPath-tan-${tanID}-${player.ID}`;
         
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${player.ID}.`);
-        // TODO: Is this the right data structure to send?
-        /*socket.send(JSON.stringify({
-            type: "LockTan",
-            tan: tan.id,
-            lockTan: true
-        }));*/
 
         return true;
     }
@@ -147,12 +145,6 @@ document.addEventListener("DOMContentLoaded", function(e) {
         txtPath.id = `txtPath-tan-${tanID}`;
 
         console.log(`[Unlock tan] ${tanID}`);
-        // TODO: Check data structure
-        /*socket.send(JSON.stringify({
-            type: "LockTan",
-            tan: tan.id,
-            lockTan: false
-        }));*/
 
         return true;
     }
