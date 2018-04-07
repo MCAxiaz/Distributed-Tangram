@@ -49,7 +49,8 @@ type MoveTanRequest struct {
 // startNode instantiates the RPC server which will allow for communication between client nodes
 
 func startNode(addr string, playerID int) (node *Node, err error) {
-	port := strings.Split(addr, ":")[1]
+	splitted := strings.Split(addr, ":")
+	port := splitted[len(splitted)-1]
 
 	resolvedAddr, err := net.ResolveTCPAddr("tcp", addr[len(addr)-len(port)-1:])
 	if err != nil {
