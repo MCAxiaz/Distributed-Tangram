@@ -24,6 +24,7 @@ var upgrader = websocket.Upgrader{
 func main() {
 	remoteAddr := flag.String("c", "", "remote client to connect to")
 	rpcPort := flag.Int("p", 9000, "address to expose")
+	identifier := flag.Int("i", 0, "identifier for this client")
 
 	flag.Parse()
 
@@ -52,9 +53,9 @@ func main() {
 
 	var game *tangram.Game
 	if *remoteAddr == "" {
-		game, err = tangram.NewGame(config, rpcAddr)
+		game, err = tangram.NewGame(config, rpcAddr, *identifier)
 	} else {
-		game, err = tangram.ConnectToGame(*remoteAddr, rpcAddr)
+		game, err = tangram.ConnectToGame(*remoteAddr, rpcAddr, *identifier)
 	}
 
 	if err != nil {
@@ -72,7 +73,7 @@ func main() {
 		addr = ":8080"
 		fmt.Println("[Default] Listening to requests at addr", addr)
 	} else {
-		fmt.Println("usage: go run client.go [-c remote-address] [-p rpc-port] [address]")
+		fmt.Println("usage: go run client.go [-i identifier] [-c remote-address] [-p rpc-port] [address]")
 		return
 	}
 
