@@ -3,6 +3,7 @@ package tangram
 import (
 	"fmt"
 	"log"
+	"math"
 	"net/rpc"
 	"sync"
 	"time"
@@ -21,8 +22,8 @@ type Game struct {
 }
 
 // NewGame starts a new Game
-func NewGame(config *GameConfig, addr string) (game *Game, err error) {
-	node, err := startNode(addr)
+func NewGame(config *GameConfig, addr string, playerID int) (game *Game, err error) {
+	node, err := startNode(addr, playerID)
 	if err != nil {
 		return
 	}
@@ -47,8 +48,8 @@ func NewGame(config *GameConfig, addr string) (game *Game, err error) {
 }
 
 // ConnectToGame connects to an existing game at addr
-func ConnectToGame(remoteAddr string, addr string) (game *Game, err error) {
-	node, err := startNode(addr)
+func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, err error) {
+	node, err := startNode(addr, playerID)
 	if err != nil {
 		return
 	}
@@ -159,7 +160,15 @@ func checkSolution(config *GameConfig, state *GameState) {
 
 	// Match based on ShapeType
 	for _, target := range config.Targets {
-		numMatched += matchMultiple(state, config, tanMap[target.ShapeType], target)
+		switch target.ShapeType {
+		// case MTri:
+		case Cube:
+			numMatched += matchMultiple(state, config, tanMap[target.ShapeType], target, 90.0)
+		case Pgram:
+			numMatched += matchMultiple(state, config, tanMap[target.ShapeType], target, 180.0)
+		default:
+			numMatched += matchMultiple(state, config, tanMap[target.ShapeType], target, 360.0)
+		}
 	}
 	if numMatched == len(config.Targets) {
 		state.Solved = true
@@ -168,10 +177,11 @@ func checkSolution(config *GameConfig, state *GameState) {
 	}
 }
 
-//returns 1 if matched, 0 otherwise.
-func matchMultiple(state *GameState, config *GameConfig, indexes []int, target *TargetTan) int {
+// returns 1 if matched, 0 otherwise.
+// mod allows shapes like square to match to multiple angles. 360 default
+func matchMultiple(state *GameState, config *GameConfig, indexes []int, target *TargetTan, mod float64) int {
 	for _, index := range indexes {
-		if isMatch(config, state.Tans[index], target) {
+		if isMatch(config, state.Tans[index], target, mod) {
 			state.Tans[index].Matched = true
 			return 1
 		}
@@ -179,8 +189,9 @@ func matchMultiple(state *GameState, config *GameConfig, indexes []int, target *
 	return 0
 }
 
-func isMatch(config *GameConfig, tan *Tan, target *TargetTan) bool {
-	return withinMargin(add(target.Location, config.Offset), tan.Location, config.Margin) && tan.Rotation == target.Rotation
+func isMatch(config *GameConfig, tan *Tan, target *TargetTan, mod float64) bool {
+	rotationMatches := math.Mod(float64(tan.Rotation), mod) == math.Mod(float64(target.Rotation), mod)
+	return withinMargin(add(target.Location, config.Offset), tan.Location, config.Margin) && rotationMatches
 }
 
 // Subscribe returns a channel that outputs a value when the game state is updated
@@ -238,6 +249,10 @@ func (game *Game) GetTime() time.Duration {
 // GetConfig returns the config of the game
 func (game *Game) GetConfig() *GameConfig {
 	return game.config
+}
+
+func (game *Game) GetPlayer() *Player {
+	return game.node.player
 }
 
 func (game *Game) syncTime(player *Player) (err error) {

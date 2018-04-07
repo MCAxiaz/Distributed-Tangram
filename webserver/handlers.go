@@ -43,6 +43,7 @@ func (handler *Handler) Handle(conn *websocket.Conn) (err error) {
 		}
 	}()
 
+	conn.WriteJSON(OutputMessage{"player", handler.game.GetPlayer()})
 	conn.WriteJSON(OutputMessage{"config", handler.game.GetConfig()})
 
 	for {
