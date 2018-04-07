@@ -201,13 +201,17 @@ document.addEventListener("DOMContentLoaded", function(e) {
     function renderTarget(config) {
       for (let ttan of config.targets) {
         let node = document.createElementNS(view.namespaceURI, "path");
+        var gTarget = document.getElementById("g-target");
         renderTargetTan(ttan, config.Offset, node)
-        view.appendChild(node);
+        gTarget.appendChild(node);
       }
     }
 
     function renderGroups() {
         var view = document.getElementById("view");
+        var gTarget = document.createElementNS(view.namespaceURI, "g");
+        gTarget.id = "g-target";
+        view.appendChild(gTarget);
         var gPaths = document.createElementNS(view.namespaceURI, "g");
         gPaths.id = "g-paths";
         view.appendChild(gPaths);
@@ -229,8 +233,8 @@ document.addEventListener("DOMContentLoaded", function(e) {
             config = message.data;
             view.setAttribute("width", config.Size.x)
             view.setAttribute("height", config.Size.y)
-            renderTarget(config);
             renderGroups();
+            renderTarget(config);
             break;
         case "player":
             player = message.data;
