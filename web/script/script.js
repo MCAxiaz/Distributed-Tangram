@@ -30,9 +30,9 @@ function renderTan(model, node) {
     if (!state.tans[model.id-1]) {
         console.log("No such tan.");
     }
+    var txtPath = document.getElementById(`txtPath-tan-${model.id}`);
     if (state.tans[model.id-1].player !== NO_PLAYER) {
         // Render player ID to tan
-        var txtPath = document.getElementById(`txtPath-tan-${model.id}`);
         if (!txtPath) {
             console.log(`textPath for tan ${model.id} does not exist.`);
         } else {
@@ -41,7 +41,11 @@ function renderTan(model, node) {
         }
     } else {
         node.setAttribute("fill-opacity", "1");
-        txtPath.innerHTML = "";
+        if (!txtPath) {
+            console.log(`textPath for tan ${model.id} does not exist.`);
+        } else {
+            txtPath.innerHTML = "";
+        }
     }
     node.setAttribute('stroke', model.shape.stroke);
     if (model.Matched) {
