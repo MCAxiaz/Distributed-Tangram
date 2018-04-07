@@ -4,7 +4,7 @@ function openSocket() {
         console.log(`[Socket] Connected to ${socket.url}`);
     });
     socket.addEventListener("message", function (e) {
-        //console.log("[Socket] Message\n", e.data);
+        console.log("[Socket] Message\n", e.data);
     });
     socket.addEventListener("error", function (e) {
         console.error(e);
@@ -32,10 +32,11 @@ function renderTan(model, node) {
     }
     if (state.tans[model.id-1].player !== NO_PLAYER) {
         // Render player ID to tan
-        var txtPath = document.getElementById(`tan-${model.id}`);
+        var txtPath = document.getElementById(`txtPath-tan-${model.id}`);
         if (!txtPath) {
             console.log(`textPath for tan ${model.id} does not exist.`);
         } else {
+            node.setAttribute("fill-opacity", "0.5");
             txtPath.innerHTML = state.tans[model.id-1].player;
         }
     }
@@ -52,7 +53,7 @@ function renderTan(model, node) {
 
 // Attaches textPath to SVG for player's name
 function attachPlayerNameTextToSVG(tanID) {
-    var svg = document.getElementById("view");
+    var svg = document.getElementById("g-text");
     var use = document.createElementNS(view.namespaceURI, "use");
 
     use.setAttribute("href", `#${tanID}`);
@@ -105,7 +106,8 @@ document.addEventListener("DOMContentLoaded", function(e) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
             attachPlayerNameTextToSVG(tan.id);
-            view.appendChild(tan);
+            var gPath = document.getElementById("g-paths");
+            gPath.appendChild(tan);
             tan.addEventListener("pointerdown", onMouseDown)
         }
         return tan;
@@ -137,7 +139,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return false;
         }
 
-        if (tanObj.player !== NO_PLAYER) {
+        if (tanObj.player !== NO_PLAYER && tanObj.player !== player.ID) {
             console.log("Another player is already holding onto the tan.");
             return false;
         } else {
@@ -150,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         // Display player name on tan
         var txtPath = document.getElementById(`txtPath-tan-${tanID}`);
         if (!txtPath) {
-            console.log(`No such txtPath with tan ${tanID}`);
+            console.log(`No such txtPath with tan ${tanID}.`);
             return false;
         }
         
@@ -199,9 +201,23 @@ document.addEventListener("DOMContentLoaded", function(e) {
     function renderTarget(config) {
       for (let ttan of config.targets) {
         let node = document.createElementNS(view.namespaceURI, "path");
+        var gTarget = document.getElementById("g-target");
         renderTargetTan(ttan, config.Offset, node)
-        view.appendChild(node);
+        gTarget.appendChild(node);
       }
+    }
+
+    function renderGroups() {
+        var view = document.getElementById("view");
+        var gTarget = document.createElementNS(view.namespaceURI, "g");
+        gTarget.id = "g-target";
+        view.appendChild(gTarget);
+        var gPaths = document.createElementNS(view.namespaceURI, "g");
+        gPaths.id = "g-paths";
+        view.appendChild(gPaths);
+        var gText = document.createElementNS(view.namespaceURI, "g");
+        gText.id = "g-text";
+        view.appendChild(gText);
     }
 
     socket = openSocket();
@@ -217,6 +233,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             config = message.data;
             view.setAttribute("width", config.Size.x)
             view.setAttribute("height", config.Size.y)
+            renderGroups();
             renderTarget(config);
             break;
         case "player":
