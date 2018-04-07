@@ -304,13 +304,13 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
         // Rotate tan clockwise or counter-clockwise
         var rotateListener = function (e) {
-            var key = e.code;
+            var key = e.which;
             var d = 0;
             switch (key) {
-            case "KeyX":
+            case 88:
                 d = 1;
                 break;
-            case "KeyZ":
+            case 90:
                 d = -1
                 break;
             }
@@ -326,7 +326,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
                 rotation: tan.rotation
             }));
         };
-        document.addEventListener("keypress", rotateListener);
+        document.addEventListener("keydown", rotateListener);
 
         document.addEventListener("pointerup", function(e) {
             var unlock = unlockTan(id);
@@ -335,7 +335,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             }
             console.log(`Releasing tan id=${id}`);
             document.removeEventListener("pointermove", mouseMoveListener);
-            document.removeEventListener("keypress", rotateListener);
+            document.removeEventListener("keydown", rotateListener);
 
             socket.send(JSON.stringify({
                 type: "ObtainTan",
