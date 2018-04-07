@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// Find the outbound IP address to listen to
-	res, err := http.Get("https://wtfismyip.com/text")
+	res, err := http.Get("https://ipv4.wtfismyip.com/text")
 	if err != nil {
 		log.Fatalln(err)
 	}
