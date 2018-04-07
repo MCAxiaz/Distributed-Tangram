@@ -4,7 +4,7 @@ function openSocket() {
         console.log(`[Socket] Connected to ${socket.url}`);
     });
     socket.addEventListener("message", function (e) {
-        //console.log("[Socket] Message\n", e.data);
+        console.log("[Socket] Message\n", e.data);
     });
     socket.addEventListener("error", function (e) {
         console.error(e);
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             return false;
         }
 
-        if (tanObj.player !== NO_PLAYER) {
+        if (tanObj.player !== NO_PLAYER && tanObj.player !== player.ID) {
             console.log("Another player is already holding onto the tan.");
             return false;
         } else {
@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         // Display player name on tan
         var txtPath = document.getElementById(`txtPath-tan-${tanID}`);
         if (!txtPath) {
-            console.log(`No such txtPath with tan ${tanID}`);
+            console.log(`No such txtPath with tan ${tanID}.`);
             return false;
         }
         
