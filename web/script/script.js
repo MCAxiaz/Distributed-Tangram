@@ -39,6 +39,9 @@ function renderTan(model, node) {
             node.setAttribute("fill-opacity", "0.5");
             txtPath.innerHTML = state.tans[model.id-1].player;
         }
+    } else {
+        node.setAttribute("fill-opacity", "1");
+        txtPath.innerHTML = "";
     }
     node.setAttribute('stroke', model.shape.stroke);
     if (model.Matched) {
