@@ -60,7 +60,7 @@ Each action updates the game state. State is replicated across every node within
 \end{flushleft}
 
 \section{Azure Usage}
-We will be running clients on the following servers. For each of these servers, port 8080 is exposed and used for the web server, while port 9000 is the RPC endpoint. All these servers will be connected.
+We will be running client nodes on the following Azure servers for remote access. For each of these servers, port 8080 is exposed and used for the web server, while port 9000 is the RPC endpoint. All these servers will be interconnected in the same cluster and share the same state.
 
 \begin{flushleft}
 Tang: http://tang-tangram.westus.cloudapp.azure.com:8080\\
