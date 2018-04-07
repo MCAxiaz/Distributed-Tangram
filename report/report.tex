@@ -63,10 +63,11 @@ Each action updates the game state. State is replicated across every node within
 We will be running clients on the following servers. For each of these servers, port 8080 is exposed and used for the web server, while port 9000 is the RPC endpoint. All these servers will be connected.
 
 \begin{flushleft}
-Tang: https://52.160.86.26:8080\\
-Qing: http://52.160.87.174:8080\\
-Ming: http://52.160.80.243:8080\\
-Yuan: http://52.160.85.192:8080\\
+Tang: http://tang-tangram.westus.cloudapp.azure.com:8080\\
+Qing: http://qing-tangram.westus.cloudapp.azure.com:8080\\
+Ming: http://ming-tangram.westus.cloudapp.azure.com:8080\\
+Yuan: http://yuan-tangram.westus.cloudapp.azure.com:8080\\
+
 \end{flushleft}
 Note that they may be intermittently down prior to the demo.
 
@@ -78,7 +79,7 @@ A node joins a network by specifying the address of an existing node and connect
 Connectivity is checked between nodes using heartbeats. Every second, simple RPC calls are performed to check the status of peered nodes. Failing nodes will immediately be removed from the state, and to receive further state updates they must explicitly attempt reconnection with any node within the network.
 
 \subsection{Re-joining}
-Clients can rejoin immediately by re-establishing a connection with a node which is still alive. There is no distinction between a client rejoining versus a new client joining
+Clients can rejoin immediately by re-establishing a connection with a node which is still alive. There is no distinction between a client rejoining versus a new client joining.
 
 
 \subsection{Conflict Resolution}
@@ -90,10 +91,10 @@ This algorithm is chosen over Ricart-Agrawala algorithm for a few reasons:
 1. In our use case, a user would not interested in waiting for a tan to be released, instead an immediate rejection is more desirable. Ricart-Agrawala requires waiting for a resource to be freed.
 
 \noindent
-2. One of the advantage of Ricart-Agrawala is the lack of release message. However release message serves a purpose in this project’s UI, as we want to show the release of a tan in real-time.
+2. One of the advantages of Ricart-Agrawala is the lack of release message. However, a release message serves a purpose in this project's UI, as we want to show the release of a tan in real-time.
 
 \subsection{Communication}
-We use RPC over TCP sockets to communicate between nodes and websocket to communicate between web front-end and web server. Communication between nodes use TCP connection despite the real-time constraints. This is because our mutual exclusion algorithm requires reliable connection. Websocket is adopted because it allows for real time communication without constantly opening new HTTP connections.
+We use RPC over TCP sockets to communicate between nodes and websocket to communicate between web front-end and web server. Communication between nodes use a TCP connection despite the real-time constraints. This is because our mutual exclusion algorithm requires reliable connection. Websocket is adopted because it allows for real time bi-directional communication without constantly opening new HTTP connections.
 
 \subsection{Trust}
 In our particular implementation, we chose to hold the assumption that all peers will not behave badly. Behaviour we considered ‘bad’ include:
@@ -119,7 +120,7 @@ It is assumed that a node and connected web front-ends have externally synchroni
 
 
 \subsection{Public IP}
-We query an external service to determine our public IP (https://ipv4.wtfismyip.com/text). This is for convenience, so we do not have to manually pass in the IP for other clients to use.
+We query an external service to determine our public IP (https://ipv4.wtfismyip.com/text). This is for convenience, so we do not have to manually pass in the IP for other clients to use. If a user would like to use localhost, they may pass in the -l flag which will not perform this lookup and instead use the address :<port>.
 
 \section{System Setup}
 \begin{flushleft}
@@ -135,7 +136,7 @@ In this example, we will show the setup procedure of two nodes, X and Y.
 4. The node generates for itself a new ID\\
 5. Given the configuration, state is instantiated\\
 6. A heartbeats goroutine begins, which will check connections once any occur\\
-7. A websocket endpoint is opened under :8081/ws\\
+7. A websocket endpoint is opened under :8080/ws\\
 8. Static files are served via :8080/
 
 \textbf{Client Y}\\
