@@ -237,6 +237,10 @@ func (game *Game) GetConfig() *GameConfig {
 	return game.config
 }
 
+func (game *Game) GetPlayer() *Player {
+	return game.node.player
+}
+
 func (game *Game) syncTime(player *Player) (err error) {
 	client, err := rpc.Dial("tcp", player.Addr)
 	if err != nil {
