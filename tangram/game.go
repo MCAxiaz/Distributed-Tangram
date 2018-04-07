@@ -19,8 +19,8 @@ type Game struct {
 }
 
 // NewGame starts a new Game
-func NewGame(config *GameConfig, addr string) (game *Game, err error) {
-	node, err := startNode(addr)
+func NewGame(config *GameConfig, addr string, playerID int) (game *Game, err error) {
+	node, err := startNode(addr, playerID)
 	if err != nil {
 		return
 	}
@@ -45,8 +45,8 @@ func NewGame(config *GameConfig, addr string) (game *Game, err error) {
 }
 
 // ConnectToGame connects to an existing game at addr
-func ConnectToGame(remoteAddr string, addr string) (game *Game, err error) {
-	node, err := startNode(addr)
+func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, err error) {
+	node, err := startNode(addr, playerID)
 	if err != nil {
 		return
 	}
