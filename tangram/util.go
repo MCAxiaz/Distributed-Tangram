@@ -1,6 +1,10 @@
 package tangram
 
-import "math"
+import (
+	"bytes"
+	"encoding/gob"
+	"math"
+)
 
 func (state *GameState) getTan(id TanID) *Tan {
 	for _, tan := range state.Tans {
@@ -42,5 +46,22 @@ func add(a Point, b Point) Point {
 	result := a
 	result.X += b.X
 	result.Y += b.Y
+	return result
+}
+
+// A silly function to make a deep copy of state
+func copyState(v *GameState) *GameState {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	dec := gob.NewDecoder(&buf)
+	err := enc.Encode(v)
+	if err != nil {
+		panic(err)
+	}
+	var result *GameState
+	err = dec.Decode(&result)
+	if err != nil {
+		panic(err)
+	}
 	return result
 }
