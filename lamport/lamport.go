@@ -25,6 +25,7 @@ func (l *Clock) Witness(v Time) bool {
 	if v < l.Counter {
 		return false
 	}
+
 	l.Counter = v
 	return true
 }

@@ -422,7 +422,30 @@ func (game *Game) lockTan(tanID TanID, playerID PlayerID, time lamport.Time) (ok
 
 	ok = tan.Clock.Witness(time)
 	if ok {
-		tan.Player = playerID
+		// If two requests for a tan occur at the same time, handle deterministically
+		// We will use PlayerID to determine who locks the tan
+		if tan.Player != NoPlayer && tan.Clock.Time() == time {
+			var lesserID, greaterID PlayerID
+			log.Printf("[lockTan] Resolving conflict between players %v | %v at time: %v\n", tan.Player, playerID, time)
+
+			if tan.Player < playerID {
+				lesserID = tan.Player
+				greaterID = playerID
+			} else {
+				lesserID = playerID
+				greaterID = tan.Player
+			}
+
+			if time%2 == 0 {
+				tan.Player = lesserID
+			} else {
+				tan.Player = greaterID
+			}
+
+			log.Printf("[lockTan] Resolution: %v holds the lock\n", tan.Player)
+		} else {
+			tan.Player = playerID
+		}
 	}
 
 	game.notify()
