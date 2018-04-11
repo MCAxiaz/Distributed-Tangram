@@ -136,7 +136,7 @@ func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
 
 // RelayHost receives votes from other nodes
 func (node *Node) RelayHost(vote *Vote, ok *bool) (err error) {
-	addrPool.Votes = append(addrPool.Votes, vote)
+	AddVote(addrPool, vote)
 	*ok = true
 	return
 }

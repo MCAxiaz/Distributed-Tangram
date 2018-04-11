@@ -36,6 +36,8 @@ var addrPool = NewAddrPool()
 
 // NewAddrPool creates a new address pool
 func NewAddrPool() *AddrPool {
+	addrPoolMutex.Lock()
+	defer addrPoolMutex.Unlock()
 	return &AddrPool{
 		Pool:  make(map[string]time.Duration, 0),
 		Count: hostSwitchTimeout,
@@ -44,17 +46,23 @@ func NewAddrPool() *AddrPool {
 
 // Decrement decrements the AddrPool's counter
 func (a *AddrPool) Decrement() {
+	addrPoolMutex.Lock()
 	a.Count--
+	addrPoolMutex.Unlock()
 }
 
 // Reset will reset the countdown
 func (a *AddrPool) Reset() {
+	addrPoolMutex.Lock()
 	a.Count = hostSwitchTimeout
+	addrPoolMutex.Unlock()
 }
 
 // Empty will empty the votes
 func (a *AddrPool) Empty() {
+	addrPoolMutex.Lock()
 	a.Votes = make([]*Vote, 0)
+	addrPoolMutex.Unlock()
 }
 
 // CountIsPositive checks if the countdown counter is still greater than 0
@@ -64,16 +72,6 @@ func (a *AddrPool) CountIsPositive() bool {
 	}
 
 	return false
-}
-
-// AddAddressToPool adds address to the address pool
-func (a *AddrPool) AddAddressToPool(addr string) {
-	addrPoolMutex.Lock()
-	_, ok := a.Pool[addr]
-	if !ok {
-		a.Pool[addr] = unknownLatency
-	}
-	addrPoolMutex.Unlock()
 }
 
 // UpdateLatency updates the latency of the corresponding address
@@ -103,12 +101,12 @@ func (a *AddrPool) selectHost() string {
 // broadcast the result to other nodes
 func (a *AddrPool) SwitchHost(game *Game, players []*Player) {
 	host := a.selectHost()
-	var hostPlayer Player
+	var hostPlayer *Player
 
 	// Figure out the host player
 	for _, player := range players {
 		if player.Addr == host {
-			hostPlayer = *player
+			hostPlayer = player
 		}
 	}
 
@@ -125,7 +123,7 @@ func (a *AddrPool) SwitchHost(game *Game, players []*Player) {
 			continue
 		}
 
-		vote := a.setupVote(game.node.player, &hostPlayer)
+		vote := a.setupVote(game.node.player, hostPlayer)
 		var ok bool
 		err = client.Call("Node.RelayHost", &vote, &ok)
 		if err != nil {
@@ -135,11 +133,23 @@ func (a *AddrPool) SwitchHost(game *Game, players []*Player) {
 		}
 	}
 
-	// TODO: Remove vote if voter voted more than once
+	// Wait until number of votes == number of different players excluding yourself
+	for {
+		if len(a.Votes) == len(players)-1 {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 
-	// TODO: Need to tally up votes. If there are any ties, tie break at random.
+	// Need to tally up votes. If there are any ties, first nominated host
+	// in the map gets to be the host
+	hostPlayer = a.tallyVotes(players)
+	a.Empty()
 
 	// TODO: Once a consensus on a single host is reached, change hosts
+	if hostPlayer.ID == game.node.player.ID {
+		// TODO: Ask everyone to connect to you
+	}
 }
 
 // setupVote is for setting up votes by having a voter and a nomination for a host.
@@ -148,4 +158,45 @@ func (a *AddrPool) setupVote(voter *Player, hostPlayer *Player) *Vote {
 		Voter:        voter,
 		SelectedHost: hostPlayer,
 	}
+}
+
+// AddVote adds a vote to the list of votes
+// It does not append the vote if the voter has already voted.
+func AddVote(a *AddrPool, vote *Vote) {
+	addrPoolMutex.Lock()
+	defer addrPoolMutex.Unlock()
+	for _, voteInList := range a.Votes {
+		if (*voteInList).Voter.ID == vote.Voter.ID {
+			return
+		}
+	}
+	a.Votes = append(a.Votes, vote)
+}
+
+func (a *AddrPool) tallyVotes(players []*Player) (hostPlayer *Player) {
+	var runningCount = make(map[PlayerID]int)
+	var id PlayerID
+	for _, vote := range a.Votes {
+		id = (*vote).SelectedHost.ID
+		runningCount[id]++
+	}
+
+	minVote := 0
+	maxCount := minVote
+	hostPlayerID := -1
+	for playerID, count := range runningCount {
+		if count > maxCount {
+			maxCount = count
+			hostPlayerID = playerID
+		}
+	}
+
+	for _, player := range players {
+		if hostPlayerID == player.ID {
+			hostPlayer = player
+			break
+		}
+	}
+
+	return hostPlayer
 }

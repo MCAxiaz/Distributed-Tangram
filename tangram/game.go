@@ -102,14 +102,18 @@ func (game *Game) heartbeat(players []*Player) {
 			go game.pingPlayer(player.ID, client)
 			t := time.Now()
 			elapsed := t.Sub(start)
-			addrPool.UpdateLatency(player.Addr, elapsed)
+			go addrPool.UpdateLatency(player.Addr, elapsed)
 		}
-		addrPool.Decrement()
-		if !addrPool.CountIsPositive() {
-			addrPool.SwitchHost(game, players)
-			addrPool.Reset()
-		}
+		go updateHost(game, players)
 		time.Sleep(1 * time.Second)
+	}
+}
+
+func updateHost(game *Game, players []*Player) {
+	addrPool.Decrement()
+	if !addrPool.CountIsPositive() {
+		addrPool.SwitchHost(game, players)
+		addrPool.Reset()
 	}
 }
 
