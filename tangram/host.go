@@ -148,7 +148,27 @@ func (a *AddrPool) SwitchHost(game *Game, players []*Player) {
 
 	// TODO: Once a consensus on a single host is reached, change hosts
 	if hostPlayer.ID == game.node.player.ID {
-		// TODO: Ask everyone to connect to you
+		// Ask everyone to connect to you
+		for _, player := range players {
+			if player.ID == game.node.player.ID {
+				continue
+			}
+
+			client, err := game.pool.getConnection(player)
+			if err != nil {
+				log.Println(err.Error())
+				err = nil
+				continue
+			}
+
+			var ok bool
+			err = client.Call("Node.ConnectToNewHost", &game.node.player, &ok)
+			if err != nil {
+				fmt.Println("[Connect New Host]: Cannot broadcast new host.")
+				err = nil
+				continue
+			}
+		}
 	}
 }
 

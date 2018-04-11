@@ -140,3 +140,10 @@ func (node *Node) RelayHost(vote *Vote, ok *bool) (err error) {
 	*ok = true
 	return
 }
+
+// ConnectToNewHost connects to new host
+func (node *Node) ConnectToNewHost(host *Player, ok *bool) (err error) {
+	// TODO
+	*ok = true
+	return
+}
