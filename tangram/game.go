@@ -422,33 +422,44 @@ func (game *Game) lockTan(tanID TanID, playerID PlayerID, time lamport.Time) (ok
 
 	ok = tan.Clock.Witness(time)
 	if ok {
-		// If two requests for a tan occur at the same time, handle deterministically
-		// We will use PlayerID to determine who locks the tan
-		if tan.Player != NoPlayer && tan.Clock.Time() == time {
-			var lesserID, greaterID PlayerID
-			log.Printf("[lockTan] Resolving conflict between players %v | %v at time: %v\n", tan.Player, playerID, time)
+		tan.Player = determineOwner(tan.Player, tan.Clock.Time(), playerID, time)
 
-			if tan.Player < playerID {
-				lesserID = tan.Player
-				greaterID = playerID
-			} else {
-				lesserID = playerID
-				greaterID = tan.Player
-			}
-
-			if time%2 == 0 {
-				tan.Player = lesserID
-			} else {
-				tan.Player = greaterID
-			}
-
-			log.Printf("[lockTan] Resolution: %v holds the lock\n", tan.Player)
-		} else {
-			tan.Player = playerID
+		if tan.Player != playerID {
+			ok = false
 		}
 	}
 
 	game.notify()
+	return
+}
+
+func determineOwner(currentHolder PlayerID, tanTime lamport.Time, playerID PlayerID, newTime lamport.Time) (lockHolder PlayerID) {
+	// If two requests for a tan occur at the same time, handle deterministically
+	// We will use PlayerID to determine who locks the tan
+	if currentHolder != NoPlayer && tanTime == newTime {
+		var lesserID, greaterID PlayerID
+		log.Printf("[lockTan] Resolving conflict between players %v | %v at time: %v\n", currentHolder, playerID, tanTime)
+
+		if currentHolder < playerID {
+			lesserID = currentHolder
+			greaterID = playerID
+		} else {
+			lesserID = playerID
+			greaterID = currentHolder
+		}
+
+		if tanTime%2 == 0 {
+			lockHolder = lesserID
+		} else {
+			lockHolder = greaterID
+		}
+
+		log.Printf("[lockTan] Resolution: %v holds the lock\n", lockHolder)
+
+	} else {
+		lockHolder = playerID
+	}
+
 	return
 }
 
@@ -478,12 +489,13 @@ func (game *Game) witnessTan(newTan *Tan) {
 		return
 	}
 
-	ok := tan.Clock.Witness(newTan.Clock.Time())
+	time := newTan.Clock.Time()
+	ok := tan.Clock.Witness(time)
 	log.Printf("[witnessTan] Witness ID = %d, ok = %t\n", tan.ID, ok)
 	if ok {
 		tan.Location = newTan.Location
 		tan.Rotation = newTan.Rotation
-		tan.Player = newTan.Player
+		tan.Player = determineOwner(tan.Player, tan.Clock.Time(), newTan.Player, time)
 	}
 	checkSolution(game.config, game.state)
 }
