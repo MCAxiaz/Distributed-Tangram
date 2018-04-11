@@ -86,7 +86,6 @@ func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, er
 }
 
 func (game *Game) heartbeat(players []*Player) {
-
 	for {
 		for _, player := range game.state.Players {
 			if player.ID == game.node.player.ID {
@@ -99,7 +98,16 @@ func (game *Game) heartbeat(players []*Player) {
 				continue
 			}
 
+			start := time.Now()
 			go game.pingPlayer(player.ID, client)
+			t := time.Now()
+			elapsed := t.Sub(start)
+			addrPool.UpdateLatency(player.Addr, elapsed)
+		}
+		addrPool.Decrement()
+		if !addrPool.CountIsPositive() {
+			addrPool.SwitchHost(game, players)
+			addrPool.Reset()
 		}
 		time.Sleep(1 * time.Second)
 	}
