@@ -320,7 +320,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
                 return tan.id == id
             });
 
-            if (state.tans[id - 1].player === player.ID) {
+            if (tan.player === player.ID) {
                 var unlock = unlockTan(id);
                 if (!unlock) {
                     console.log(`Error encountered while unlocking tan ${id}`);
