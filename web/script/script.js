@@ -14,8 +14,7 @@ function openSocket() {
 
 const NO_PLAYER = -1;
 
-function renderTan(model, node) {
-    var id = `tan-${model.id}`
+function renderTan(model, path, txtPath) {
     var transform = `translate(${model.location.x}, ${model.location.y}) rotate(${model.rotation})`;
     var d = "";
     model.shape.points.forEach(function (point, i) {
@@ -24,59 +23,25 @@ function renderTan(model, node) {
     });
     d += "Z";
 
-    node.id = id;
-    node.setAttribute('fill', model.shape.fill);
-    // Check if tan is being held by a player, and if it is, show that player's ID on it
-    if (!state.tans[model.id - 1]) {
-        console.log("No such tan.");
-    }
-    var txtPath = document.getElementById(`txtPath-tan-${model.id}`);
-    if (state.tans[model.id - 1].player !== NO_PLAYER) {
-        // Render player ID to tan
-        if (!txtPath) {
-            console.log(`textPath for tan ${model.id} does not exist.`);
-        } else {
-            node.setAttribute("fill-opacity", "0.5");
-            txtPath.innerHTML = state.tans[model.id - 1].player;
-        }
-    } else {
-        node.setAttribute("fill-opacity", "1");
-        if (!txtPath) {
-            console.log(`textPath for tan ${model.id} does not exist.`);
-        } else {
-            txtPath.innerHTML = "";
-        }
-    }
-    node.setAttribute('stroke', model.shape.stroke);
+    path.id = `tan-${model.id}`;
+    path.setAttribute('fill', model.shape.fill);
     if (model.Matched) {
-        node.setAttribute('stroke', 'green');
+        path.setAttribute('stroke', 'green');
+    } else {
+        path.setAttribute('stroke', model.shape.stroke);
     }
+    path.setAttribute('transform', transform);
+    path.setAttribute('d', d);
 
-    node.setAttribute('transform', transform);
-    node.setAttribute('d', d);
-    node.classList.add("tan");
-    return node
-}
-
-// Attaches textPath to SVG for player's name
-function attachPlayerNameTextToSVG(tanID) {
-    var svg = document.getElementById("g-text");
-    var use = document.createElementNS(view.namespaceURI, "use");
-
-    use.setAttribute("href", `#${tanID}`);
-    var txt = document.createElementNS(view.namespaceURI, "text");
-    txt.setAttribute("font-family", "Verdana");
-    txt.setAttribute("font-size", "12");
-
-    var txtPath = document.createElementNS(view.namespaceURI, "textPath");
-    txtPath.setAttribute("href", `#${tanID}`);
-
-    txtPath.id = `txtPath-${tanID}`;
-    txtPath.innerHTML = "";
-
-    txt.appendChild(txtPath);
-    svg.appendChild(use);
-    svg.appendChild(txt);
+    if (model.player !== NO_PLAYER) {
+        // Render player ID to tan
+        path.classList.add("locked")
+        txtPath.innerHTML = model.player;
+    } else {
+        path.classList.remove("locked")
+        txtPath.innerHTML = "";
+    }
+    return path;
 }
 
 function renderTargetTan(model, offset, node) {
@@ -103,27 +68,36 @@ var state;
 var player;
 document.addEventListener("DOMContentLoaded", function (e) {
     var view = document.getElementById("view");
+    var gPath = document.getElementById("g-path");
+    var gText = document.getElementById("g-text");
     var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
+    
+    function getTan(id) {
+        var model = state.tans.find(function (tan) {
+            return tan.id == id
+        });
 
-    function getTan(model) {
-        var tan = view.getElementById(`tan-${model.id}`);
-
-        if (!tan) {
-            tan = document.createElementNS(view.namespaceURI, "path");
-            renderTan(model, tan);
-            attachPlayerNameTextToSVG(tan.id);
-            var gPath = document.getElementById("g-paths");
-            gPath.appendChild(tan);
-            tan.addEventListener("click", onMouseDown)
+        if (!model) {
+            // The tan we are trying to find does not exist
+            return null
         }
-        return tan;
+
+        var path = view.getElementById(`tan-${id}`);
+        var text = view.getElementById(`txtPath-${id}`);
+        if (!path) {
+            var result = initializeTan(id);
+            path = result.path;
+            text = result.text;
+        }
+
+        return {model, path, text};
     }
 
     function render(state) {
         for (let tan of state.tans) {
-            let node = getTan(tan);
-            renderTan(tan, node);
+            let {model, path, text} = getTan(tan.id);
+            renderTan(model, path, text);
         }
     }
 
@@ -132,79 +106,32 @@ document.addEventListener("DOMContentLoaded", function (e) {
     // - highlight the tan to indicate someone has possession of it
     // returns true if tan is successfully locked, false if not
     function lockTan(tanID) {
-        var tan = view.getElementById(`tan-${tanID}`);
+        var {model, path, text} = getTan(tanID)
 
-        if (!tan) {
-            console.log("You are grabbing a tan that does not exist.");
+        if (model.player !== NO_PLAYER && model.player !== player.ID) {
+            console.log(`Another player ${model.player} is already holding onto the tan.`);
             return false;
         }
 
-        // Check if tan is already held by someone else
-        var tanObj = state.tans[tanID - 1];
-        if (!tanObj) {
-            console.log("Tan does not exist.");
-            return false;
-        }
-
-        if (tanObj.player !== NO_PLAYER && tanObj.player !== player.ID) {
-            console.log("Another player is already holding onto the tan.");
-            return false;
-        } else {
-            tanObj.player = player.ID;
-        }
-
-        // Change path's fill opacity to half
-        tan.setAttribute("fill-opacity", "0.5");
-
-        // Display player name on tan
-        var txtPath = document.getElementById(`txtPath-tan-${tanID}`);
-        if (!txtPath) {
-            console.log(`No such txtPath with tan ${tanID}.`);
-            return false;
-        }
-
-        txtPath.innerHTML = player.ID;
-        tan.classList.add("locked");
-        tan.classList.add("draggable");
+        model.player = player.ID;
+        renderTan(model, path, text);
 
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${player.ID}.`);
-
         return true;
     }
 
     function unlockTan(tanID) {
-        var tan = view.getElementById(`tan-${tanID}`);
+        var {model, path, text} = getTan(tanID)
 
-        if (!tan) {
-            console.log("Cannot unlock a tan that does not exist.");
+        if (model.player !== player.ID) {
+            console.log(`Another player ${model.player} is already holding onto the tan.`);
             return false;
         }
 
-        // Set tan to unlocked
-        var tanObj = state.tans[tanID - 1];
-        if (!tanObj) {
-            console.log("There exists no such tan.");
-            return false;
-        }
-
-        tanObj.player = NO_PLAYER;
-
-        // Restore path's fill opacity to 1
-        tan.setAttribute("fill-opacity", "1");
-
-        // Remove player name from tan
-        var txtPath = document.getElementById(`txtPath-tan-${tanID}`);
-        if (!txtPath) {
-            console.log(`No such txtPath with tan ${tanID}`);
-            return false;
-        }
-
-        txtPath.innerHTML = "";
-        tan.classList.remove("locked");
-        tan.classList.remove("draggable");
+        model.player = NO_PLAYER;
+        renderTan(model, path, text);
 
         console.log(`[Unlock tan] ${tanID}`);
-
         return true;
 
     }
@@ -220,15 +147,6 @@ document.addEventListener("DOMContentLoaded", function (e) {
 
     function renderGroups() {
         var view = document.getElementById("view");
-        var gTarget = document.createElementNS(view.namespaceURI, "g");
-        gTarget.id = "g-target";
-        view.appendChild(gTarget);
-        var gPaths = document.createElementNS(view.namespaceURI, "g");
-        gPaths.id = "g-paths";
-        view.appendChild(gPaths);
-        var gText = document.createElementNS(view.namespaceURI, "g");
-        gText.id = "g-text";
-        view.appendChild(gText);
     }
 
     socket = openSocket();
@@ -267,11 +185,12 @@ document.addEventListener("DOMContentLoaded", function (e) {
         }
     }, 100)
 
-    function mouseMoveListener(tan, path, startTanPos, startMousePos) {
+    function mouseMoveListener(tan, startTanPos, startMousePos) {
         return (e) => {
-            tan.location.x = Math.round(Math.max(0, Math.min(startTanPos.x + (e.clientX - startMousePos.x), config.Size.x)));
-            tan.location.y = Math.round(Math.max(0, Math.min(startTanPos.y + (e.clientY - startMousePos.y), config.Size.y)));
-            renderTan(tan, path);
+            tan.location.x = Math.round(clamp(startTanPos.x + (e.clientX - startMousePos.x), 0, config.Size.x));
+            tan.location.y = Math.round(clamp(startTanPos.y + (e.clientY - startMousePos.y), 0, config.Size.y));
+            var {path, text} = getTan(tan.id)
+            renderTan(tan, path, text);
             socket.send(JSON.stringify({
                 type: "MoveTan",
                 tan: tan.id,
@@ -282,7 +201,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
     };
 
     // Rotate tan clockwise or counter-clockwise
-    function rotateListener (tan, path) {
+    function rotateListener (tan) {
         return (e) => {
             const key = e.which;
             let d = 0;
@@ -294,23 +213,46 @@ document.addEventListener("DOMContentLoaded", function (e) {
                 d = -1
                 break;
             }
+
             if (d) {
                 console.log(`[rotate] ${key}`);
                 tan.rotation = rotate(tan.rotation, d);
-                renderTan(tan, path);
-            }
+                var {path, text} = getTan(tan.id);
+                renderTan(tan, path, text);
 
-            socket.send(JSON.stringify({
-                type: "MoveTan",
-                tan: tan.id,
-                location: tan.location,
-                rotation: tan.rotation
-            }));
+                socket.send(JSON.stringify({
+                    type: "MoveTan",
+                    tan: tan.id,
+                    location: tan.location,
+                    rotation: tan.rotation
+                }));
+            }
         }
     }
 
-    const handlers = {};
+    // Creates DOM nodes necessary to display a tan
+    function initializeTan(tanID) {
+        var path = document.createElementNS(view.namespaceURI, "path");
+        path.addEventListener("click", onMouseDown)
+        
+        var txt = document.createElementNS(view.namespaceURI, "text");
+        txt.setAttribute("font-family", "Verdana");
+        txt.setAttribute("font-size", "12");
 
+        var txtPath = document.createElementNS(view.namespaceURI, "textPath");
+        txtPath.setAttribute("href", `#${tanID}`);
+
+        txtPath.id = `txtPath-${tanID}`;
+        txtPath.innerHTML = "";
+
+        txt.appendChild(txtPath);
+        gPath.appendChild(path);
+        gText.appendChild(txt);
+
+        return {path, text: txtPath}
+    }
+
+    const handlers = {};
     function onMouseDown(e) {
         if (e.ctrlKey) {
             var path = e.target;
@@ -356,8 +298,8 @@ document.addEventListener("DOMContentLoaded", function (e) {
                 };
 
                 handlers[id] = {
-                    move: mouseMoveListener(tan, path, startTanPos, startMousePos),
-                    rotate: rotateListener(tan, path)
+                    move: mouseMoveListener(tan, startTanPos, startMousePos),
+                    rotate: rotateListener(tan)
                 };
 
                 document.addEventListener("pointermove", handlers[id].move);
@@ -375,4 +317,8 @@ document.addEventListener("DOMContentLoaded", function (e) {
 
 function rotate(r, d) {
     return (r + d * 15 + 720) % 360;
+}
+
+function clamp(x, min, max) {
+    return Math.max(min, Math.min(x, max))
 }
