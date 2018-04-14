@@ -25,7 +25,16 @@
 </head>
 <body>
     <div>Time: <span id="timer"></span></div>
-    <svg id="view"></svg>
+    <svg id="view">
+        <style>
+            .locked {
+                fill-opacity: 0.5
+            }
+        </style>
+        <g id="g-target"></g>
+        <g id="g-path"></g>
+        <g id="g-text"></g>
+    </svg>
     <h2>Player</h2>
     <div id="current-player">
         <p>ID: <span id="current-player-id"></span></p>
