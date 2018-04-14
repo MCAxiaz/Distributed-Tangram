@@ -51,6 +51,7 @@ func main() {
 		}
 
 		ip = strings.TrimSpace(string(ipBytes[:len(ipBytes)]))
+		log.Printf("[wtfismyip] %s", ip)
 	}
 
 	rpcAddr := fmt.Sprintf("%v:%v", ip, *rpcPort)

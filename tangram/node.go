@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"../lamport"
+	"github.com/pixelbender/go-stun/stun"
 )
 
 // Node is the exposed RPC interface for a tangram node
@@ -49,9 +50,19 @@ type MoveTanRequest struct {
 // startNode instantiates the RPC server which will allow for communication between client nodes
 func startNode(addr string, playerID int) (node *Node, err error) {
 	port := strings.Split(addr, ":")[1]
-	resolvedAddr, err := net.ResolveTCPAddr("tcp", addr[len(addr)-len(port)-1:])
+	laddr := addr[len(addr)-len(port)-1:]
+
+	resolvedAddr, err := net.ResolveTCPAddr("tcp", laddr)
 	if err != nil {
 		return
+	}
+
+	var paddr string
+	mappedAddr, err := mapPort(resolvedAddr)
+	if err == nil {
+		paddr = mappedAddr.String()
+	} else {
+		paddr = addr
 	}
 
 	inbound, err := net.ListenTCP("tcp", resolvedAddr)
@@ -62,7 +73,7 @@ func startNode(addr string, playerID int) (node *Node, err error) {
 	node = new(Node)
 	node.listener = inbound
 
-	node.player = newPlayer(addr, playerID)
+	node.player = newPlayer(paddr, playerID)
 
 	server := rpc.NewServer()
 	server.Register(node)
@@ -131,5 +142,37 @@ func (node *Node) MoveTan(req MoveTanRequest, ok *bool) (err error) {
 func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
 	//do something
 	*ok = true
+	return
+}
+
+func mapPort(laddr *net.TCPAddr) (paddr net.Addr, err error) {
+	raddr, err := net.ResolveTCPAddr("tcp", "stun.stunprotocol.org:3478")
+	if err != nil {
+		log.Printf("[mapPort] %s", err)
+		return
+	}
+	netConn, err := net.DialTCP("tcp", laddr, raddr)
+	if err != nil {
+		log.Printf("[mapPort] %s", err)
+		return
+	}
+	netConn.SetKeepAlive(true)
+	// Do NOT close this connection
+	// defer netConn.Close()
+
+	config := stun.DefaultConfig.Clone()
+	conn := stun.NewConn(netConn, config)
+	if err != nil {
+		log.Printf("[mapPort] %s", err)
+		return
+	}
+
+	paddr, err = conn.Discover()
+	if err != nil {
+		log.Printf("[mapPort] %s", err)
+		return
+	}
+
+	log.Printf("[mapPort] Success, mapped %s to %s", laddr.String(), paddr.String())
 	return
 }
