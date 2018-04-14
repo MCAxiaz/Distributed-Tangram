@@ -23,7 +23,6 @@ function renderTan(model, path, txtPath) {
     });
     d += "Z";
 
-    path.id = `tan-${model.id}`;
     path.setAttribute('fill', model.shape.fill);
     if (model.Matched) {
         path.setAttribute('stroke', 'green');
@@ -233,14 +232,15 @@ document.addEventListener("DOMContentLoaded", function (e) {
     // Creates DOM nodes necessary to display a tan
     function initializeTan(tanID) {
         var path = document.createElementNS(view.namespaceURI, "path");
-        path.addEventListener("click", onMouseDown)
+        path.id = `tan-${tanID}`;
+        path.addEventListener("click", onMouseDown);
         
         var txt = document.createElementNS(view.namespaceURI, "text");
         txt.setAttribute("font-family", "Verdana");
         txt.setAttribute("font-size", "12");
 
         var txtPath = document.createElementNS(view.namespaceURI, "textPath");
-        txtPath.setAttribute("href", `#${tanID}`);
+        txtPath.setAttribute("href", `#${path.id}`);
 
         txtPath.id = `txtPath-${tanID}`;
         txtPath.innerHTML = "";
