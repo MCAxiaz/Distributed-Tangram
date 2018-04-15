@@ -64,15 +64,18 @@ func startNode(addr string, playerID int) (node *Node, err error) {
 		return
 	}
 
-	var externalAddr string
-	// Setup port forwarding
-	externalIP, externalPort, err := mapPortLibp2p(ip, portNum)
-	if err != nil {
-		log.Println(err)
-		log.Printf("UPnP port forwarding failed")
-		externalAddr = addr
+	externalAddr := addr
+	if ip != "127.0.0.1" {
+		// Setup port forwarding
+		externalIP, externalPort, err := mapPortLibp2p(ip, portNum)
+		if err != nil {
+			log.Println(err)
+			log.Printf("UPnP port forwarding failed")
+		} else {
+			externalAddr = fmt.Sprintf("%s:%d", externalIP, externalPort)
+		}
 	} else {
-		externalAddr = fmt.Sprintf("%s:%d", externalIP, externalPort)
+		log.Println("Skipping port forwarding")
 	}
 
 	resolvedAddr, err := net.ResolveTCPAddr("tcp", addr)
