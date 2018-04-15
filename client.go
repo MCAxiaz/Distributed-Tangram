@@ -24,7 +24,6 @@ func main() {
 	remoteAddr := flag.String("c", "", "remote client to connect to")
 	rpcAddr := flag.String("p", ":9000", "address to expose")
 	identifier := flag.Int("i", 0, "identifier for this client")
-	// local := flag.Bool("l", false, "prevent public IP lookup")
 
 	flag.Parse()
 

@@ -13,7 +13,6 @@ import (
 	"github.com/libp2p/go-libp2p-nat"
 	"github.com/multiformats/go-multiaddr"
 
-	"../igd"
 	"../lamport"
 )
 
@@ -56,20 +55,27 @@ func startNode(addr string, playerID int) (node *Node, err error) {
 	port := strings.Split(addr, ":")[1]
 	ip := addr[:len(addr)-len(port)-1]
 
+	if ip == "" {
+		ip = "0.0.0.0"
+	}
+
 	portNum, err := strconv.Atoi(port)
 	if err != nil {
 		return
 	}
 
-	var externalAddr string
-	// Setup port forwarding
-	externalIP, externalPort, err := mapPortLibp2p(ip, portNum)
-	if err != nil {
-		log.Println(err)
-		log.Printf("UPnP port forwarding failed")
-		externalAddr = addr
+	externalAddr := addr
+	if ip != "127.0.0.1" {
+		// Setup port forwarding
+		externalIP, externalPort, err := mapPortLibp2p(ip, portNum)
+		if err != nil {
+			log.Println(err)
+			log.Printf("UPnP port forwarding failed")
+		} else {
+			externalAddr = fmt.Sprintf("%s:%d", externalIP, externalPort)
+		}
 	} else {
-		externalAddr = fmt.Sprintf("%s:%d", externalIP, externalPort)
+		log.Println("Skipping port forwarding")
 	}
 
 	resolvedAddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -154,27 +160,6 @@ func (node *Node) MoveTan(req MoveTanRequest, ok *bool) (err error) {
 func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
 	//do something
 	*ok = true
-	return
-}
-
-func mapPort(port int) (externalIP string, externalPort int, err error) {
-	igd, err := igd.GetIGD()
-	if err != nil {
-		return
-	}
-
-	externalIP, err = igd.ExternalIP()
-	if err != nil {
-		return
-	}
-
-	err = igd.Forward(uint16(port), "Tangram")
-	if err != nil {
-		return
-	}
-
-	externalPort = port
-	log.Printf("[mapPort] Port forwarding from %s:%d", externalIP, externalPort)
 	return
 }
 
