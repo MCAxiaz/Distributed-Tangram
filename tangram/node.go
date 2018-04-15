@@ -13,7 +13,6 @@ import (
 	"github.com/libp2p/go-libp2p-nat"
 	"github.com/multiformats/go-multiaddr"
 
-	"../igd"
 	"../lamport"
 )
 
@@ -55,6 +54,10 @@ type MoveTanRequest struct {
 func startNode(addr string, playerID int) (node *Node, err error) {
 	port := strings.Split(addr, ":")[1]
 	ip := addr[:len(addr)-len(port)-1]
+
+	if ip == "" {
+		ip = "0.0.0.0"
+	}
 
 	portNum, err := strconv.Atoi(port)
 	if err != nil {
@@ -154,27 +157,6 @@ func (node *Node) MoveTan(req MoveTanRequest, ok *bool) (err error) {
 func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
 	//do something
 	*ok = true
-	return
-}
-
-func mapPort(port int) (externalIP string, externalPort int, err error) {
-	igd, err := igd.GetIGD()
-	if err != nil {
-		return
-	}
-
-	externalIP, err = igd.ExternalIP()
-	if err != nil {
-		return
-	}
-
-	err = igd.Forward(uint16(port), "Tangram")
-	if err != nil {
-		return
-	}
-
-	externalPort = port
-	log.Printf("[mapPort] Port forwarding from %s:%d", externalIP, externalPort)
 	return
 }
 
