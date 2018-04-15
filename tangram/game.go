@@ -96,6 +96,7 @@ func (game *Game) heartbeat(players []*Player) {
 			client, err := game.pool.getConnection(player)
 			if err != nil {
 				log.Println(err.Error())
+				game.dropPlayer(player.ID)
 				continue
 			}
 
