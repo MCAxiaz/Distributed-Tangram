@@ -144,6 +144,7 @@ func (node *Node) RelayHost(vote *Vote, ok *bool) (err error) {
 // ConnectToNewHost connects to new host
 func (node *Node) ConnectToNewHost(host *Player, ok *bool) (err error) {
 	// TODO
+	fmt.Println("Connected to new host: ", host.Addr)
 	*ok = true
 	return
 }
