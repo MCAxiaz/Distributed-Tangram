@@ -127,12 +127,11 @@ func (a *AddrPool) SwitchHost(game *Game, players []*Player) {
 		time.Sleep(1 * time.Second)
 	}
 
-	// Need to tally up votes. If there are any ties, first nominated host
-	// in the map gets to be the host
+	// Need to tally up votes. If there are any ties, nominated candidate with higher player ID becomes host
 	hostPlayer = a.tallyVotes(players)
 	a.Empty()
 
-	// TODO: Once a consensus on a single host is reached, change hosts
+	// Once a consensus on a single host is reached, change hosts
 	if hostPlayer.ID == game.node.player.ID {
 		// Ask everyone to connect to you
 		for _, player := range players {
@@ -194,6 +193,11 @@ func (a *AddrPool) tallyVotes(players []*Player) (hostPlayer *Player) {
 		if count > maxCount {
 			maxCount = count
 			hostPlayerID = playerID
+		} else if count == maxCount {
+			// Tiebreaker done with higher player ID
+			if playerID > hostPlayerID {
+				hostPlayerID = playerID
+			}
 		}
 	}
 
