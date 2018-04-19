@@ -19,6 +19,7 @@ type Game struct {
 	node        *Node
 	pool        *connectionPool
 	subscribers []chan bool
+	latency     *AddrPool
 }
 
 // NewGame starts a new Game
@@ -86,7 +87,8 @@ func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, er
 }
 
 func (game *Game) heartbeat(players []*Player) {
-	c := make(chan time.Time, 0)
+	game.latency = NewAddrPool()
+	c := make(chan time.Time, 1)
 	for {
 		for _, player := range game.state.Players {
 			if player.ID == game.node.player.ID {
@@ -100,11 +102,13 @@ func (game *Game) heartbeat(players []*Player) {
 				continue
 			}
 
-			start := time.Now()
-			go game.pingPlayer(player.ID, client, c)
-			t := <-c
-			elapsed := t.Sub(start)
-			go addrPool.UpdateLatency(player.Addr, elapsed)
+			go func(player *Player, client *rpc.Client) {
+				start := time.Now()
+				go game.pingPlayer(player.ID, client, c)
+				t := <-c
+				elapsed := t.Sub(start)
+				go game.latency.UpdateLatency(player.ID, elapsed)
+			}(player, client)
 		}
 		if len(game.state.Players) > 1 {
 			go updateHost(game)
@@ -114,9 +118,9 @@ func (game *Game) heartbeat(players []*Player) {
 }
 
 func updateHost(game *Game) {
-	if addrPool.CheckTime() {
-		addrPool.SwitchHost(game)
-		addrPool.Wait = time.Now()
+	if game.latency.CheckTime() {
+		game.SwitchHost()
+		game.latency.Wait = time.Now()
 	}
 }
 

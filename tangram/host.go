@@ -8,13 +8,14 @@ import (
 )
 
 // AddrPool is a struct with the following fields:
-// - Pool: A map of string addresses and its latency
+// - Pool: A map of int player IDs and their latency
 // - Count: How many seconds (approximately) left until we switch host
 // - Votes: Current votes for next host
 type AddrPool struct {
-	Pool  map[string]time.Duration
+	Pool  map[int]time.Duration
 	Wait  time.Time
 	Votes []*Vote
+	Mutex *sync.Mutex
 }
 
 // Vote consists of a Voter and a Selected Host, and both are players structs
@@ -23,37 +24,31 @@ type Vote struct {
 	SelectedHost *Player
 }
 
-var addrPoolMutex = &sync.Mutex{}
-
 // unknownLatency specifies latencies that have not been measured or is unknown
 const unknownLatency = -1
 
 // hostSwitchTimeout is a setting for how long before switching a host
-const hostSwitchTimeout = uint64(60)
-
-// addrPool is a pointer and a global variable
-var addrPool = NewAddrPool()
+const hostSwitchTimeout = 60
 
 // NewAddrPool creates a new address pool
 func NewAddrPool() *AddrPool {
-	addrPoolMutex.Lock()
-	defer addrPoolMutex.Unlock()
 	return &AddrPool{
-		Pool: make(map[string]time.Duration, 0),
-		Wait: time.Now(),
+		Pool:  make(map[int]time.Duration, 0),
+		Wait:  time.Now(),
+		Mutex: &sync.Mutex{},
 	}
 }
 
 // Empty will empty the votes
 func (a *AddrPool) Empty() {
-	addrPoolMutex.Lock()
+	a.Mutex.Lock()
 	a.Votes = make([]*Vote, 0)
-	addrPoolMutex.Unlock()
+	a.Mutex.Unlock()
 }
 
 // CheckTime checks if the countdown counter is still greater than 0
 func (a *AddrPool) CheckTime() bool {
-	if a.Wait.Sub(time.Now()) >= (30 * time.Second) {
+	if a.Wait.Sub(time.Now()) >= (hostSwitchTimeout * time.Second) {
 		return true
 	}
 
@@ -61,38 +56,40 @@ func (a *AddrPool) CheckTime() bool {
 }
 
 // UpdateLatency updates the latency of the corresponding address
-func (a *AddrPool) UpdateLatency(addr string, latency time.Duration) {
-	addrPoolMutex.Lock()
-	a.Pool[addr] = latency
-	addrPoolMutex.Unlock()
+func (a *AddrPool) UpdateLatency(id int, latency time.Duration) {
+	a.Mutex.Lock()
+	a.Pool[id] = latency
+	a.Mutex.Unlock()
 }
 
-// selectHost will check all of the latencies collected
-func (a *AddrPool) selectHost() string {
-	addrPoolMutex.Lock()
-	defer addrPoolMutex.Unlock()
-	maxDuration := 100000 * time.Second // The connection will be dropped long before this will be ever reached
+// selectHost will check all of the latencies collected and
+// return the ID of the host with the lowest latency
+func (game *Game) selectHost() int {
+	game.latency.Mutex.Lock()
+	defer game.latency.Mutex.Unlock()
+	maxDuration := time.Duration(1<<63 - 1)
 	min := maxDuration
-	host := ""
-	for addr, latency := range a.Pool {
+	// By default, the host address will be the current player's
+	hostID := game.node.player.ID
+	for id, latency := range game.latency.Pool {
 		if latency < min {
 			min = latency
-			host = addr
+			hostID = id
 		}
 	}
-	return host
+	return hostID
 }
 
 // SwitchHost will allow nodes to vote for the fastest host and then
 // broadcast the result to other nodes
-func (a *AddrPool) SwitchHost(game *Game) {
+func (game *Game) SwitchHost() {
 	players := game.state.Players
-	host := a.selectHost()
+	host := game.selectHost()
 	var hostPlayer *Player
 
 	// Figure out the host player
 	for _, player := range players {
-		if player.Addr == host {
+		if player.ID == host {
 			hostPlayer = player
 		}
 	}
@@ -110,27 +107,28 @@ func (a *AddrPool) SwitchHost(game *Game) {
 			continue
 		}
 
-		vote := a.setupVote(game.node.player, hostPlayer)
-		var ok bool
-		err = client.Call("Node.RelayHost", &vote, &ok)
-		if err != nil {
-			fmt.Println("[Relay Host]: Cannot broadcast vote.")
-			err = nil
-			continue
-		}
+		vote := game.latency.setupVote(game.node.player, hostPlayer)
+		go func(vote *Vote) {
+			var ok bool
+			err = client.Call("Node.RelayHost", &vote, &ok)
+			if err != nil {
+				fmt.Println("[Relay Host]: Cannot broadcast vote.")
+				err = nil
+			}
+		}(vote)
 	}
 
-	// Wait until number of votes == number of different players excluding yourself
+	// Wait until number of votes >= number of different players excluding yourself
 	for {
-		if len(a.Votes) == len(game.state.Players)-1 {
+		if len(game.latency.Votes) >= len(game.state.Players)-1 {
 			break
 		}
 		time.Sleep(1 * time.Second)
 	}
 
 	// Need to tally up votes. If there are any ties, nominated candidate with higher player ID becomes host
-	hostPlayer = a.tallyVotes(players)
-	a.Empty()
+	hostPlayer = game.tallyVotes()
+	game.latency.Empty()
 
 	// Once a consensus on a single host is reached, change hosts
 	game.state.Host = hostPlayer
@@ -148,13 +146,14 @@ func (a *AddrPool) SwitchHost(game *Game) {
 				continue
 			}
 
-			var ok bool
-			err = client.Call("Node.ConnectToNewHost", &game.node.player, &ok)
-			if err != nil {
-				fmt.Println("[Connect New Host]: Cannot broadcast new host.")
-				err = nil
-				continue
-			}
+			go func(game *Game) {
+				var ok bool
+				err = client.Call("Node.ConnectToNewHost", &game.node.player, &ok)
+				if err != nil {
+					fmt.Println("[Connect New Host]: Cannot broadcast new host.")
+					err = nil
+				}
+			}(game)
 		}
 	}
 }
@@ -170,8 +169,8 @@ func (a *AddrPool) setupVote(voter *Player, hostPlayer *Player) *Vote {
 // AddVote adds a vote to the list of votes
 // It does not append the vote if the voter has already voted.
 func AddVote(a *AddrPool, vote *Vote) {
-	addrPoolMutex.Lock()
-	defer addrPoolMutex.Unlock()
+	a.Mutex.Lock()
+	defer a.Mutex.Unlock()
 	for _, voteInList := range a.Votes {
 		if (*voteInList).Voter.ID == vote.Voter.ID {
 			return
@@ -180,10 +179,10 @@ func AddVote(a *AddrPool, vote *Vote) {
 	a.Votes = append(a.Votes, vote)
 }
 
-func (a *AddrPool) tallyVotes(players []*Player) (hostPlayer *Player) {
+func (game *Game) tallyVotes() (hostPlayer *Player) {
 	var runningCount = make(map[PlayerID]int)
 	var id PlayerID
-	for _, vote := range a.Votes {
+	for _, vote := range game.latency.Votes {
 		id = (*vote).SelectedHost.ID
 		runningCount[id]++
 	}
@@ -203,12 +202,7 @@ func (a *AddrPool) tallyVotes(players []*Player) (hostPlayer *Player) {
 		}
 	}
 
-	for _, player := range players {
-		if hostPlayerID == player.ID {
-			hostPlayer = player
-			break
-		}
-	}
+	hostPlayer = game.state.getPlayer(hostPlayerID)
 
 	return hostPlayer
 }
