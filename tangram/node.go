@@ -6,8 +6,12 @@ import (
 	"math/rand"
 	"net"
 	"net/rpc"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/libp2p/go-libp2p-nat"
+	"github.com/multiformats/go-multiaddr"
 
 	"../lamport"
 )
@@ -49,7 +53,32 @@ type MoveTanRequest struct {
 // startNode instantiates the RPC server which will allow for communication between client nodes
 func startNode(addr string, playerID int) (node *Node, err error) {
 	port := strings.Split(addr, ":")[1]
-	resolvedAddr, err := net.ResolveTCPAddr("tcp", addr[len(addr)-len(port)-1:])
+	ip := addr[:len(addr)-len(port)-1]
+
+	if ip == "" {
+		ip = "0.0.0.0"
+	}
+
+	portNum, err := strconv.Atoi(port)
+	if err != nil {
+		return
+	}
+
+	externalAddr := addr
+	if ip != "127.0.0.1" {
+		// Setup port forwarding
+		externalIP, externalPort, err := mapPortLibp2p(ip, portNum)
+		if err != nil {
+			log.Println(err)
+			log.Printf("UPnP port forwarding failed")
+		} else {
+			externalAddr = fmt.Sprintf("%s:%d", externalIP, externalPort)
+		}
+	} else {
+		log.Println("Skipping port forwarding")
+	}
+
+	resolvedAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
 	}
@@ -62,7 +91,7 @@ func startNode(addr string, playerID int) (node *Node, err error) {
 	node = new(Node)
 	node.listener = inbound
 
-	node.player = newPlayer(addr, playerID)
+	node.player = newPlayer(externalAddr, playerID)
 
 	server := rpc.NewServer()
 	server.Register(node)
@@ -146,5 +175,44 @@ func (node *Node) ConnectToNewHost(host *Player, ok *bool) (err error) {
 	// TODO
 	fmt.Println("Connected to new host: ", host.Addr)
 	*ok = true
+	return
+}
+
+func mapPortLibp2p(ip string, port int) (externalIP string, externalPort int, err error) {
+	nat := nat.DiscoverNAT()
+	if nat == nil {
+		log.Println("[lib2p2] DiscoverNAT failed")
+		err = fmt.Errorf("DiscoverNAT failed")
+		return
+	}
+
+	addr := fmt.Sprintf("/ip4/%s/tcp/%d", ip, port)
+	ma, err := multiaddr.NewMultiaddr(addr)
+	if err != nil {
+		return
+	}
+
+	nat.PortMapAddrs([]multiaddr.Multiaddr{ma})
+	externalAddr, ok := nat.MappedAddrs()[ma]
+	if !ok {
+		err = fmt.Errorf("Cannot find mapped address %s", ma.String())
+	}
+
+	externalIP, err = externalAddr.ValueForProtocol(multiaddr.P_IP4)
+	if err != nil {
+		return
+	}
+
+	externalPortStr, err := externalAddr.ValueForProtocol(multiaddr.P_TCP)
+	if err != nil {
+		return
+	}
+
+	externalPort, err = strconv.Atoi(externalPortStr)
+	if err != nil {
+		return
+	}
+
+	log.Printf("[mapPortLibp2p] Port forwarding from %s:%d to %s:%d", externalIP, externalPort, ip, port)
 	return
 }

@@ -13,7 +13,7 @@ import (
 // - Votes: Current votes for next host
 type AddrPool struct {
 	Pool  map[string]time.Duration
-	Count uint64
+	Wait  time.Time
 	Votes []*Vote
 }
 
@@ -39,23 +39,9 @@ func NewAddrPool() *AddrPool {
 	addrPoolMutex.Lock()
 	defer addrPoolMutex.Unlock()
 	return &AddrPool{
-		Pool:  make(map[string]time.Duration, 0),
-		Count: hostSwitchTimeout,
+		Pool: make(map[string]time.Duration, 0),
+		Wait: time.Now(),
 	}
-}
-
-// Decrement decrements the AddrPool's counter
-func (a *AddrPool) Decrement() {
-	addrPoolMutex.Lock()
-	a.Count--
-	addrPoolMutex.Unlock()
-}
-
-// Reset will reset the countdown
-func (a *AddrPool) Reset() {
-	addrPoolMutex.Lock()
-	a.Count = hostSwitchTimeout
-	addrPoolMutex.Unlock()
 }
 
 // Empty will empty the votes
@@ -65,9 +51,9 @@ func (a *AddrPool) Empty() {
 	addrPoolMutex.Unlock()
 }
 
-// CountIsPositive checks if the countdown counter is still greater than 0
-func (a *AddrPool) CountIsPositive() bool {
-	if a.Count < 1 {
+// CheckTime checks if the countdown counter is still greater than 0
+func (a *AddrPool) CheckTime() bool {
+	if a.Wait.Sub(time.Now()) >= (30 * time.Second) {
 		return true
 	}
 
