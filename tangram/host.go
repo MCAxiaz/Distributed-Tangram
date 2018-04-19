@@ -85,7 +85,8 @@ func (a *AddrPool) selectHost() string {
 
 // SwitchHost will allow nodes to vote for the fastest host and then
 // broadcast the result to other nodes
-func (a *AddrPool) SwitchHost(game *Game, players []*Player) {
+func (a *AddrPool) SwitchHost(game *Game) {
+	players := game.state.Players
 	host := a.selectHost()
 	var hostPlayer *Player
 
@@ -121,7 +122,7 @@ func (a *AddrPool) SwitchHost(game *Game, players []*Player) {
 
 	// Wait until number of votes == number of different players excluding yourself
 	for {
-		if len(a.Votes) == len(players)-1 {
+		if len(a.Votes) == len(game.state.Players)-1 {
 			break
 		}
 		time.Sleep(1 * time.Second)

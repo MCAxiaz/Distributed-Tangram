@@ -106,16 +106,16 @@ func (game *Game) heartbeat(players []*Player) {
 			elapsed := t.Sub(start)
 			go addrPool.UpdateLatency(player.Addr, elapsed)
 		}
-		if len(players) > 1 {
-			go updateHost(game, players)
+		if len(game.state.Players) > 1 {
+			go updateHost(game)
 		}
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func updateHost(game *Game, players []*Player) {
+func updateHost(game *Game) {
 	if addrPool.CheckTime() {
-		addrPool.SwitchHost(game, players)
+		addrPool.SwitchHost(game)
 		addrPool.Wait = time.Now()
 	}
 }
