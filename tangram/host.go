@@ -132,6 +132,7 @@ func (a *AddrPool) SwitchHost(game *Game, players []*Player) {
 	a.Empty()
 
 	// Once a consensus on a single host is reached, change hosts
+	game.state.Host = hostPlayer
 	if hostPlayer.ID == game.node.player.ID {
 		// Ask everyone to connect to you
 		for _, player := range players {

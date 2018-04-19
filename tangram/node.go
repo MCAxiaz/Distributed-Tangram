@@ -172,7 +172,20 @@ func (node *Node) RelayHost(vote *Vote, ok *bool) (err error) {
 
 // ConnectToNewHost connects to new host
 func (node *Node) ConnectToNewHost(host *Player, ok *bool) (err error) {
-	// TODO
+
+	// TODO: Unsubscribe and close connection to previous host
+
+	client, err := rpc.Dial("tcp", host.Addr)
+	if err != nil {
+		return
+	}
+
+	var res ConnectResponse
+	err = client.Call("Node.Connect", ConnectRequest{*node.player}, &res)
+	if err != nil {
+		return
+	}
+
 	fmt.Println("Connected to new host: ", host.Addr)
 	*ok = true
 	return
