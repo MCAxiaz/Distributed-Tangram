@@ -89,8 +89,8 @@ function createSolutionText(solved) {
       txt = document.createElementNS(view.namespaceURI, "text");
       txt.setAttribute("font-family", "Garamond");
       txt.setAttribute("font-size", "25");
-      txt.setAttribute("x", 600);
-      txt.setAttribute("y", 50);
+      txt.setAttribute("x", config.Size.x * 7 / 10 );
+      txt.setAttribute("y", config.Size.y / 10);
       txt.setAttribute("style", "fill: green; font-weight: bold");
       txt.setAttribute("pointer-events", "none")
       txt.id = `solutiontxt`;
