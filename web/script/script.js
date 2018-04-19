@@ -101,6 +101,7 @@ var socket;
 var config;
 var state;
 var player;
+var host;
 document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
     var timer = document.getElementById("timer");
@@ -235,6 +236,8 @@ document.addEventListener("DOMContentLoaded", function(e) {
         case "state":
             state = message.data
             render(state);
+            var hostInfo = document.getElementById("host-info");
+            hostInfo.innerHTML = state.host.ID
             break;
         case "config":
             config = message.data;
