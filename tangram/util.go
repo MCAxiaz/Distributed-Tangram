@@ -6,6 +6,11 @@ import (
 	"math"
 )
 
+// Dict is a dictionary.
+// This will mostly be used to carry arguments
+// in RPC calls.
+type Dict map[string]interface{}
+
 func (state *GameState) getTan(id TanID) *Tan {
 	for _, tan := range state.Tans {
 		if tan.ID == id {

@@ -191,6 +191,12 @@ func (node *Node) ConnectToNewHost(host *Player, ok *bool) (err error) {
 	return
 }
 
+// AskForHost lets a player ask another player for the host
+func (node *Node) AskForHost(args *Dict, host *Player) (err error) {
+	*host = *node.game.state.Host
+	return
+}
+
 func mapPortLibp2p(ip string, port int) (externalIP string, externalPort int, err error) {
 	nat := nat.DiscoverNAT()
 	if nat == nil {
