@@ -48,9 +48,9 @@ function renderTan(model, node) {
         }
     }
     node.setAttribute('stroke', model.shape.stroke);
-    if (model.Matched) {
-      node.setAttribute('stroke', 'green');
-    }
+    // if (model.Matched) {
+    //   node.setAttribute('stroke', 'green');
+    // }
 
     node.setAttribute('transform', transform);
     node.setAttribute('d', d);
@@ -70,13 +70,38 @@ function attachPlayerNameTextToSVG(tanID) {
 
     var txtPath = document.createElementNS(view.namespaceURI, "textPath");
     txtPath.setAttribute("href", `#${tanID}`);
-    
+
     txtPath.id = `txtPath-${tanID}`;
     txtPath.innerHTML = "";
 
     txt.appendChild(txtPath);
     svg.appendChild(use);
     svg.appendChild(txt);
+}
+
+// Displays Solution text when solved
+function createSolutionText(solved) {
+    // Display player name on tan
+    var txt = document.getElementById(`solutiontxt`);
+    if (!txt) {
+      var svg = document.getElementById("g-text");
+
+      txt = document.createElementNS(view.namespaceURI, "text");
+      txt.setAttribute("font-family", "Garamond");
+      txt.setAttribute("font-size", "25");
+      txt.setAttribute("x", 600);
+      txt.setAttribute("y", 50);
+      txt.setAttribute("style", "fill: green; font-weight: bold");
+      txt.setAttribute("pointer-events", "none")
+      txt.id = `solutiontxt`;
+      svg.appendChild(txt);
+    }
+
+    if (solved) {
+      txt.innerHTML = "SOLVED!";
+    } else {
+      txt.innerHTML = "";
+    }
 }
 
 function renderTargetTan(model, offset, node) {
@@ -108,7 +133,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
     function getTan(model) {
         var tan = view.getElementById(`tan-${model.id}`);
-        
+
         if (!tan) {
             tan = document.createElementNS(view.namespaceURI, "path");
             renderTan(model, tan);
@@ -125,6 +150,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             let node = getTan(tan);
             renderTan(tan, node);
         }
+        createSolutionText(state.Solved)
     }
 
     // lockTan objectives
@@ -152,7 +178,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         } else {
             tanObj.player = player.ID;
         }
-        
+
         // Change path's fill opacity to half
         tan.setAttribute("fill-opacity", "0.5");
 
@@ -162,9 +188,9 @@ document.addEventListener("DOMContentLoaded", function(e) {
             console.log(`No such txtPath with tan ${tanID}.`);
             return false;
         }
-        
+
         txtPath.innerHTML = player.ID;
-        
+
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${player.ID}.`);
 
         return true;
@@ -189,7 +215,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
         // Restore path's fill opacity to 1
         tan.setAttribute("fill-opacity", "1");
-        
+
         // Remove player name from tan
         var txtPath = document.getElementById(`txtPath-tan-${tanID}`);
         if (!txtPath) {
@@ -277,7 +303,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
         }
 
         console.log(`Holding on to tan id=${id}`);
-        
+
         var startTanPos = {
             x: tan.location.x,
             y: tan.location.y,
