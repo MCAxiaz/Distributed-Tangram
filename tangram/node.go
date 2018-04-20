@@ -126,6 +126,7 @@ func (node *Node) Connect(req *ConnectRequest, res *ConnectResponse) (err error)
 
 	log.Printf("[Connect] Connected by %d", req.Player.ID)
 	node.game.state.Players = append(node.game.state.Players, &req.Player)
+	node.game.notify()
 
 	*res = ConnectResponse{node.game.GetState(), node.game.GetConfig(), node.player}
 	return
@@ -189,7 +190,9 @@ func (node *Node) HostElection(args int, ok *bool) (err error) {
 }
 
 func (node *Node) PushUpdate(update *GameState, ok *bool) (err error) {
+	node.game.lock.Lock()
 	node.game.witnessState(update)
+	node.game.lock.Unlock()
 	node.game.notify()
 	*ok = true
 	return

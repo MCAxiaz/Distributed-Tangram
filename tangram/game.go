@@ -61,6 +61,16 @@ func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, er
 		return
 	}
 
+	game = &Game{
+		node:        node,
+		latency:     NewAddrPool(),
+		pool:        newConnectionPool(),
+		subscribers: make([]chan bool, 0),
+	}
+	node.game = game
+
+	game.lock.Lock()
+
 	var res ConnectResponse
 	err = client.Call("Node.Connect", ConnectRequest{*node.player}, &res)
 	if err != nil {
@@ -70,15 +80,10 @@ func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, er
 	config := res.Config
 	state := initState(config, node.player)
 
-	game = &Game{
-		state:       state,
-		config:      config,
-		node:        node,
-		latency:     NewAddrPool(),
-		pool:        newConnectionPool(),
-		subscribers: make([]chan bool, 0),
-	}
-	node.game = game
+	game.state = state
+	game.config = config
+
+	game.lock.Unlock()
 
 	game.witnessState(res.State)
 	game.syncTime(state.getPlayer(res.Player.ID))
@@ -557,6 +562,8 @@ func (game *Game) witnessState(state *GameState) {
 		if game.isPlayerInteresting(player) {
 			game.connectToPeer(player)
 		}
+		go game.measureLatency(player)
+
 	}
 
 	checkSolution(game.config, state)
@@ -573,7 +580,11 @@ func (game *Game) interestingPlayers() []*Player {
 		return game.state.Players
 	}
 	// I am subscribing to a host, I talk to the host alone
-	return []*Player{game.state.getPlayer(host)}
+	hostPlayer := game.state.getPlayer(host)
+	if hostPlayer != nil {
+		return []*Player{hostPlayer}
+	}
+	return []*Player{}
 }
 
 func (game *Game) isPlayerInteresting(player *Player) bool {
@@ -591,4 +602,17 @@ func (game *Game) isPlayerInteresting(player *Player) bool {
 
 func (game *Game) hosted() bool {
 	return game.state.Host != NoPlayer
+}
+
+func (game *Game) measureLatency(player *Player) (err error) {
+	client, err := game.pool.getConnection(player)
+	if err != nil {
+		return
+	}
+	start := time.Now()
+	err = game.pingPlayer(player.ID, client)
+	end := time.Now()
+	elapsed := end.Sub(start)
+	game.latency.UpdateLatency(player.ID, elapsed)
+	return
 }
