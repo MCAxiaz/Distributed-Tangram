@@ -95,8 +95,8 @@ func (game *Game) Election() {
 	}
 
 	for _, player := range game.state.Players {
-		// Ignore all IDs lower and your own
-		if player.ID <= game.node.player.ID {
+		// Ignore all latencies lower and your own ID
+		if player.ID == game.node.player.ID || player.AvgLatency <= game.node.player.AvgLatency {
 			continue
 		}
 
