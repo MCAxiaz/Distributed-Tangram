@@ -90,7 +90,6 @@ var socket;
 var config;
 var state;
 var player;
-var host;
 document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
     var gPath = document.getElementById("g-path");
@@ -196,7 +195,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             state = message.data
             render(state);
             var hostInfo = document.getElementById("host-info");
-            hostInfo.innerHTML = state.host.ID
+            hostInfo.innerHTML = state.host
             break;
         case "config":
             config = message.data;

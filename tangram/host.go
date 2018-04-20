@@ -3,6 +3,7 @@ package tangram
 import (
 	"fmt"
 	"log"
+	"net/rpc"
 	"sync"
 	"time"
 )
@@ -10,8 +11,9 @@ import (
 // AddrPool is a struct with the following fields:
 // - Pool: A map of int player IDs and their latency
 type AddrPool struct {
-	Pool  map[int]time.Duration
-	Mutex *sync.Mutex
+	MyPing  map[PlayerID]time.Duration
+	AvgPing map[PlayerID]time.Duration
+	Mutex   *sync.Mutex
 }
 
 // unknownLatency specifies latencies that have not been measured or is unknown
@@ -23,34 +25,27 @@ const hostSwitchTimeout = 60
 // NewAddrPool creates a new address pool
 func NewAddrPool() *AddrPool {
 	return &AddrPool{
-		Pool:  make(map[int]time.Duration, 0),
-		Mutex: &sync.Mutex{},
+		MyPing:  make(map[PlayerID]time.Duration),
+		AvgPing: make(map[PlayerID]time.Duration),
+		Mutex:   &sync.Mutex{},
 	}
 }
 
 // UpdateLatency updates the latency of the corresponding address
-func (a *AddrPool) UpdateLatency(id int, latency time.Duration) {
+func (a *AddrPool) UpdateLatency(id PlayerID, latency time.Duration) {
 	a.Mutex.Lock()
-	a.Pool[id] = latency
+	a.MyPing[id] = latency
 	a.Mutex.Unlock()
-}
-
-func (game *Game) getLowestPlayerLatency() (latency int) {
-	minLatency := 0
-	for _, player := range game.state.Players {
-		if player.AvgLatency < minLatency {
-			latency = player.AvgLatency
-		}
-	}
-	return
 }
 
 // SendLatenciesOver gets other nodes to send their average latencies over
 func (game *Game) SendLatenciesOver() {
+	var wg sync.WaitGroup
 	for _, player := range game.state.Players {
 		if player.ID == game.node.player.ID {
 			continue
 		}
+
 		client, err := game.pool.getConnection(player)
 		if err != nil {
 			log.Println(err.Error())
@@ -58,81 +53,102 @@ func (game *Game) SendLatenciesOver() {
 			continue
 		}
 
-		var latency *int
-		var args *Dict
-		err = client.Call("Node.GetLatency", &args, &latency)
-		if err != nil {
-			fmt.Println("[Get Latency]: Cannot get latency from peer.")
-			err = nil
-		}
-		player.AvgLatency = *latency
+		wg.Add(1)
+		go func(client *rpc.Client, player PlayerID) {
+			defer wg.Done()
+			var latency time.Duration
+			err := client.Call("Node.GetLatency", 0, &latency)
+			if err != nil {
+				fmt.Println("[Get Latency]: Cannot get latency from peer.")
+				return
+			}
+			game.latency.AvgPing[player] = latency
+		}(client, player.ID)
 	}
+	wg.Wait()
 }
 
 // Election will start an election with nodes with higher IDs
 func (game *Game) Election() {
-	// Tell others to send their latencies over
-	game.SendLatenciesOver()
-	// If you have the highest average latency, you are the boss
-	if game.node.player.AvgLatency == game.getLowestPlayerLatency() {
-		client, err := game.pool.getConnection(game.node.player)
-		if err != nil {
-			log.Println(err.Error())
-			err = nil
-		}
+	// Don't allow any action during an election
+	game.lock.Lock()
+	defer game.lock.Unlock()
+	game.latency.Mutex.Lock()
+	defer game.latency.Mutex.Unlock()
 
-		go func(game *Game) {
-			var ok bool
-			var err error
-			err = client.Call("Node.ConnectToMe", &game.node.player, &ok)
-			if err != nil {
-				fmt.Println("[Connect To Me]: Cannot broadcast new host.")
-				err = nil
+	// Tell others to send their latencies over
+	// TODO This should also signal that an election started
+	// Until the election ends, nobody should be allowed to update their latency
+	game.SendLatenciesOver()
+
+	myPlayer := game.node.player.ID
+	myLatency := game.GetAvgLatency()
+
+	// We use Bully Algorithm to figure out who should be the new host
+	// Let's first see if someone else would be the host
+	for player, latency := range game.latency.AvgPing {
+		if less(player, latency, myPlayer, myLatency) {
+			player := game.state.getPlayer(player)
+			if player == nil {
+				continue
 			}
-		}(game)
-		return
+
+			client, err := game.pool.getConnection(player)
+			if err != nil {
+				continue
+			}
+
+			var ok bool
+			err = client.Call("Node.HostElection", 0, &ok)
+			if err != nil {
+				continue
+			}
+
+			// If we reached here, someone finished the election?
+			// TODO Figure out what it means to reach here
+			return
+		}
 	}
 
-	for _, player := range game.state.Players {
-		// Ignore all IDs lower and your own
-		if player.ID <= game.node.player.ID {
+	// It is now our turn to become host
+	// TODO tell everyone to listen to you
+	game.state.Host = myPlayer
+	for _, player := range game.interestingPlayers() {
+		if player.ID == myPlayer {
 			continue
 		}
 
 		client, err := game.pool.getConnection(player)
 		if err != nil {
-			log.Println(err.Error())
-			err = nil
 			continue
 		}
 
-		go func() {
-			var ok bool
-			var args *Dict
-			err = client.Call("Node.HostElection", &args, &ok)
-			if err != nil {
-				fmt.Println("[Host Election]: Cannot broadcast host election.")
-				err = nil
-			}
-		}()
+		var ok bool
+		err = client.Call("Node.ConnectToMe", 0, &ok)
+		if err != nil {
+			continue
+		}
 	}
+
 	return
 }
 
-// CalculateAvgLatency will check all of the latencies collected and
+// GetAvgLatency will check all of the latencies collected and
 // average them.
-func (game *Game) CalculateAvgLatency() (avg int) {
-	game.latency.Mutex.Lock()
-	defer game.latency.Mutex.Unlock()
+func (game *Game) GetAvgLatency() (avg time.Duration) {
 	avg = 0
-	sum := 0
-	count := 0
-	for _, latency := range game.latency.Pool {
-		sum += int(latency)
+	var sum time.Duration
+	var count time.Duration
+	for _, latency := range game.latency.MyPing {
+		sum += latency
 		count++
 	}
 	if count != 0 {
 		avg = sum / count
 	}
 	return avg
+}
+
+func less(player1 PlayerID, latency1 time.Duration, player2 PlayerID, latency2 time.Duration) bool {
+	return (latency1 < latency2) || (latency1 == latency2 && player1 < player2)
 }

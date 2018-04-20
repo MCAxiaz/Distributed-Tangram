@@ -31,12 +31,13 @@ func NewGame(config *GameConfig, addr string, playerID int) (game *Game, err err
 
 	state := initState(config, node.player)
 	// TODO Sometimes this needs to be nil to signify lack of a host
-	state.Host = node.player
+	state.Host = node.player.ID
 
 	game = &Game{
 		state:       state,
 		config:      config,
 		node:        node,
+		latency:     NewAddrPool(),
 		pool:        newConnectionPool(),
 		subscribers: make([]chan bool, 0),
 	}
@@ -73,6 +74,7 @@ func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, er
 		state:       state,
 		config:      config,
 		node:        node,
+		latency:     NewAddrPool(),
 		pool:        newConnectionPool(),
 		subscribers: make([]chan bool, 0),
 	}
@@ -83,18 +85,12 @@ func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, er
 
 	go game.heartbeat(state.Players)
 
-	// Wait 60 seconds before calculating average latency
-	time.Sleep(60 * time.Second)
-	game.node.player.AvgLatency = game.CalculateAvgLatency()
-
 	return
 }
 
 func (game *Game) heartbeat(players []*Player) {
-	game.latency = NewAddrPool()
-	c := make(chan time.Time, 1)
 	for {
-		for _, player := range game.state.Players {
+		for _, player := range game.interestingPlayers() {
 			if player.ID == game.node.player.ID {
 				continue
 			}
@@ -108,27 +104,30 @@ func (game *Game) heartbeat(players []*Player) {
 
 			go func(player *Player, client *rpc.Client) {
 				start := time.Now()
-				go game.pingPlayer(player.ID, client, c)
-				t := <-c
-				elapsed := t.Sub(start)
-				go game.latency.UpdateLatency(player.ID, elapsed)
+				err := game.pingPlayer(player.ID, client)
+				end := time.Now()
+				elapsed := end.Sub(start)
+
+				if err != nil {
+					// If there is a disconnection with the host
+					if game.state.Host == player.ID {
+						game.Election()
+					}
+					game.dropPlayer(player.ID)
+					return
+				}
+
+				game.latency.UpdateLatency(player.ID, elapsed)
 			}(player, client)
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 
-func (game *Game) pingPlayer(id PlayerID, client *rpc.Client, c chan time.Time) {
+func (game *Game) pingPlayer(id PlayerID, client *rpc.Client) (err error) {
 	var ok bool
-	err := client.Call("Node.Ping", game.node.player.ID, &ok)
-	if err != nil {
-		// If there is a disconnection with the host
-		if game.state.Host.ID == id {
-			game.Election()
-		}
-		game.dropPlayer(id)
-	}
-	c <- time.Now()
+	err = client.Call("Node.Ping", game.node.player.ID, &ok)
+	return
 }
 
 func (game *Game) connectToPeer(addr string) (err error) {
@@ -535,4 +534,18 @@ func (game *Game) witnessState(state *GameState) {
 	}
 
 	checkSolution(game.config, state)
+}
+
+func (game *Game) interestingPlayers() []*Player {
+	host := game.state.Host
+	// Decentralized
+	if host == NoPlayer {
+		return game.state.Players
+	}
+	// I am host, I am responsible for updating all peers
+	if host == game.node.player.ID {
+		return game.state.Players
+	}
+	// I am subscribing to a host, I talk to the host alone
+	return []*Player{game.state.getPlayer(host)}
 }
