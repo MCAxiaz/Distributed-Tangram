@@ -43,6 +43,31 @@ function renderTan(model, path, txtPath) {
     return path;
 }
 
+// Displays Solution text when solved
+function createSolutionText(solved) {
+    // Display player name on tan
+    var txt = document.getElementById(`solutiontxt`);
+    if (!txt) {
+      var svg = document.getElementById("g-text");
+
+      txt = document.createElementNS(view.namespaceURI, "text");
+      txt.setAttribute("font-family", "Garamond");
+      txt.setAttribute("font-size", "25");
+      txt.setAttribute("x", config.Size.x * 7 / 10 );
+      txt.setAttribute("y", config.Size.y / 10);
+      txt.setAttribute("style", "fill: green; font-weight: bold");
+      txt.setAttribute("pointer-events", "none")
+      txt.id = `solutiontxt`;
+      svg.appendChild(txt);
+    }
+
+    if (solved) {
+      txt.innerHTML = "SOLVED!";
+    } else {
+      txt.innerHTML = "";
+    }
+}
+
 function renderTargetTan(model, offset, node) {
     var transform = `translate(${model.location.x + offset.x}, ${model.location.y + offset.y}) rotate(${model.rotation})`;
     var d = "";
@@ -98,6 +123,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
             let {model, path, text} = getTan(tan.id);
             renderTan(model, path, text);
         }
+        createSolutionText(state.Solved)
     }
 
     // lockTan objectives
