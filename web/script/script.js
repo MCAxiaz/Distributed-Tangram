@@ -115,6 +115,12 @@ document.addEventListener("DOMContentLoaded", function (e) {
         model.player = player.ID;
         renderTan(model, path, text);
 
+        socket.send(JSON.stringify({
+            type: "ObtainTan",
+            tan: tanID,
+            release: false
+        }));
+
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${player.ID}.`);
         return true;
     }
@@ -129,6 +135,12 @@ document.addEventListener("DOMContentLoaded", function (e) {
 
         model.player = NO_PLAYER;
         renderTan(model, path, text);
+
+        socket.send(JSON.stringify({
+            type: "ObtainTan",
+            tan: tanID,
+            release: true
+        }));
 
         console.log(`[Unlock tan] ${tanID}`);
         return true;
@@ -233,7 +245,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
     function initializeTan(tanID) {
         var path = document.createElementNS(view.namespaceURI, "path");
         path.id = `tan-${tanID}`;
-        path.addEventListener("click", onMouseDown);
+        path.addEventListener("pointerdown", onMouseDown);
         
         var txt = document.createElementNS(view.namespaceURI, "text");
         txt.setAttribute("font-family", "Verdana");
@@ -252,65 +264,56 @@ document.addEventListener("DOMContentLoaded", function (e) {
         return {path, text: txtPath}
     }
 
-    const handlers = {};
     function onMouseDown(e) {
-        if (e.ctrlKey) {
-            var path = e.target;
-            var id = parseInt(path.id.match(/tan-(\d+)/)[1]);
+        var persistent = e.ctrlKey
+        var path = e.target;
+        var id = parseInt(path.id.match(/tan-(\d+)/)[1]);
+        var tan = state.tans.find(function (tan) {
+            return tan.id == id
+        });
 
-            var tan = state.tans.find(function (tan) {
-                return tan.id == id
-            });
-
-            if (tan.player === player.ID) {
-                var unlock = unlockTan(id);
-                if (!unlock) {
-                    console.log(`Error encountered while unlocking tan ${id}`);
-                }
-                console.log(`Releasing tan id=${id}`);
-
-                if (handlers[id] && handlers[id].move && handlers[id].rotate) {
-                    document.removeEventListener("pointermove", handlers[id].move);
-                    document.removeEventListener("keydown", handlers[id].rotate);
-                }
-
-                socket.send(JSON.stringify({
-                    type: "ObtainTan",
-                    tan: id,
-                    release: true
-                }));
+        var held = release = tan.player === player.ID;
+        if (persistent) {
+            // Explicit locking
+            if (held) {
+                unlockTan(id);
             } else {
-                var locked = lockTan(tan.id);
-                if (!locked) {
-                    return;
-                }
-
-                console.log(`Holding on to tan id=${id}`);
-                const startTanPos = {
-                    x: tan.location.x,
-                    y: tan.location.y,
-                    r: tan.rotation
-                };
-
-                const startMousePos = {
-                    x: e.clientX,
-                    y: e.clientY
-                };
-
-                handlers[id] = {
-                    move: mouseMoveListener(tan, startTanPos, startMousePos),
-                    rotate: rotateListener(tan)
-                };
-
-                document.addEventListener("pointermove", handlers[id].move);
-                document.addEventListener("keydown", handlers[id].rotate);
-
-                socket.send(JSON.stringify({
-                    type: "ObtainTan",
-                    tan: id,
-                    release: false
-                }));
+                lockTan(id);
             }
+        } else {
+            // Drag and drop
+            if (!held) {
+                var ok = lockTan(id)
+                if (!ok) {
+                    return
+                }
+            }
+
+            const startTanPos = {
+                x: tan.location.x,
+                y: tan.location.y,
+                r: tan.rotation
+            };
+
+            const startMousePos = {
+                x: e.clientX,
+                y: e.clientY
+            };
+
+            var moveHandler = mouseMoveListener(tan, startTanPos, startMousePos);
+            var rotateHandler = rotateListener(tan);
+            var mouseUpHandler = function(e) {
+                if (!held) {
+                    unlockTan(id)
+                }
+                document.removeEventListener("pointermove", moveHandler);
+                document.removeEventListener("keydown", rotateHandler);
+                document.removeEventListener("pointerup", mouseUpHandler);
+            };
+
+            document.addEventListener("pointermove", moveHandler);
+            document.addEventListener("keydown", rotateHandler);
+            document.addEventListener("pointerup", mouseUpHandler);
         }
     }
 });
