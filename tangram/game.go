@@ -103,6 +103,7 @@ func (game *Game) heartbeat(players []*Player) {
 			if err != nil {
 				log.Println(err.Error())
 				game.dropPlayer(player.ID)
+				delete(game.latency.Pool, player.ID)
 				continue
 			}
 

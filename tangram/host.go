@@ -75,6 +75,11 @@ func (game *Game) Election() {
 	game.SendLatenciesOver()
 	// If you have the highest average latency, you are the boss
 	if game.node.player.AvgLatency == game.getLowestPlayerLatency() {
+		// You are already the host, so end the election
+		if game.node.player.ID == game.state.Host.ID {
+			return
+		}
+
 		game.state.Host = game.node.player
 		client, err := game.pool.getConnection(game.node.player)
 		if err != nil {
