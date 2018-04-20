@@ -83,9 +83,10 @@ type Point struct {
 
 // Player is a struct that holds player information.
 type Player struct {
-	ID   PlayerID
-	Name string
-	Addr string
+	ID         PlayerID
+	Name       string
+	Addr       string
+	AvgLatency int
 }
 
 // PlayerID is the ID of a Player

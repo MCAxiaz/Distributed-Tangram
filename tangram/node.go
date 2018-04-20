@@ -163,13 +163,6 @@ func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
 	return
 }
 
-// RelayHost receives votes from other nodes
-func (node *Node) RelayHost(vote *Vote, ok *bool) (err error) {
-	AddVote(node.game.latency, vote)
-	*ok = true
-	return
-}
-
 // ConnectToNewHost connects to new host
 func (node *Node) ConnectToNewHost(host *Player, ok *bool) (err error) {
 
@@ -188,12 +181,6 @@ func (node *Node) ConnectToNewHost(host *Player, ok *bool) (err error) {
 
 	fmt.Println("Connected to new host: ", host.Addr)
 	*ok = true
-	return
-}
-
-// AskForHost lets a player ask another player for the host
-func (node *Node) AskForHost(args *Dict, host *Player) (err error) {
-	*host = *node.game.state.Host
 	return
 }
 

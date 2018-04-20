@@ -122,7 +122,7 @@ func (game *Game) pingPlayer(id PlayerID, client *rpc.Client, c chan time.Time) 
 		// set a flag that the host failed.
 		if game.state.Host.ID == id {
 			game.state.HostOnline = false
-			game.SwitchHost()
+			game.Election()
 		}
 		game.dropPlayer(id)
 	}
