@@ -30,8 +30,11 @@ func NewGame(config *GameConfig, addr string, playerID int) (game *Game, err err
 	}
 
 	state := initState(config, node.player)
-	// TODO Sometimes this needs to be nil to signify lack of a host
-	state.Host = node.player.ID
+	if config.Host {
+		state.Host = node.player.ID
+	} else {
+		state.Host = NoPlayer
+	}
 
 	game = &Game{
 		state:       state,

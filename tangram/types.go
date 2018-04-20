@@ -29,6 +29,7 @@ type GameConfig struct {
 	Margin  int32
 	Tans    []*Tan
 	Targets []*TargetTan `json:"targets"`
+	Host    bool
 }
 
 // Tan is a struct that holds the following information:
