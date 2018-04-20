@@ -55,25 +55,26 @@ func startNode(addr string, playerID int) (node *Node, err error) {
 	port := strings.Split(addr, ":")[1]
 	ip := addr[:len(addr)-len(port)-1]
 
-	if ip == "" {
-		ip = "0.0.0.0"
-	}
-
 	portNum, err := strconv.Atoi(port)
 	if err != nil {
 		return
 	}
 
 	externalAddr := addr
+
+	if ip == "" {
+		ip = "0.0.0.0"
+	}
+
 	if ip == "0.0.0.0" {
 		// Setup port forwarding
 		externalIP, externalPort, err := mapPortLibp2p(ip, portNum)
 		if err != nil {
 			log.Println(err)
 			log.Printf("UPnP port forwarding failed")
-		} else {
-			externalAddr = fmt.Sprintf("%s:%d", externalIP, externalPort)
 		}
+
+		externalAddr = fmt.Sprintf("%s:%d", externalIP, externalPort)
 	} else {
 		log.Println("Skipping port forwarding")
 	}
@@ -200,6 +201,8 @@ func (node *Node) PushUpdate(update *GameState, ok *bool) (err error) {
 }
 
 func mapPortLibp2p(ip string, port int) (externalIP string, externalPort int, err error) {
+	externalIP = ip
+	externalPort = port
 	nat := nat.DiscoverNAT()
 	if nat == nil {
 		log.Println("[lib2p2] DiscoverNAT failed")
