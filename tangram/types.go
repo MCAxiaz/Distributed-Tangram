@@ -16,7 +16,7 @@ type GameState struct {
 	Tans    []*Tan `json:"tans"`
 	Timer   time.Time
 	Players []*Player
-	Host    *Player `json:"host"`
+	Host    PlayerID `json:"host"`
 	Solved  bool
 }
 
@@ -82,10 +82,9 @@ type Point struct {
 
 // Player is a struct that holds player information.
 type Player struct {
-	ID         PlayerID
-	Name       string
-	Addr       string
-	AvgLatency int
+	ID   PlayerID
+	Name string
+	Addr string
 }
 
 // PlayerID is the ID of a Player

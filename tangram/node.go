@@ -65,7 +65,7 @@ func startNode(addr string, playerID int) (node *Node, err error) {
 	}
 
 	externalAddr := addr
-	if ip != "127.0.0.1" {
+	if ip == "0.0.0.0" {
 		// Setup port forwarding
 		externalIP, externalPort, err := mapPortLibp2p(ip, portNum)
 		if err != nil {
@@ -124,7 +124,9 @@ func (node *Node) Connect(req *ConnectRequest, res *ConnectResponse) (err error)
 		}
 	}
 
+	log.Printf("[Connect] Connected by %d", req.Player.ID)
 	node.game.state.Players = append(node.game.state.Players, &req.Player)
+	node.game.notify()
 
 	*res = ConnectResponse{node.game.GetState(), node.game.GetConfig(), node.player}
 	return
@@ -164,35 +166,35 @@ func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
 }
 
 // GetLatency retrieves the average latency from a remote node
-func (node *Node) GetLatency(args *Dict, latency *int) (err error) {
-	*latency = node.player.AvgLatency
+func (node *Node) GetLatency(req int, latency *time.Duration) (err error) {
+	*latency = node.game.GetAvgLatency()
 	return
 }
 
 // ConnectToMe broadcasts yourself as the new host and makes everyone
 // connect to you.
-func (node *Node) ConnectToMe(host *Player, ok *bool) (err error) {
-
-	client, err := rpc.Dial("tcp", host.Addr)
-	if err != nil {
-		return
-	}
-
-	var res ConnectResponse
-	err = client.Call("Node.Connect", ConnectRequest{*node.player}, &res)
-	if err != nil {
-		return
-	}
-
-	fmt.Println("Connected to new host: ", host.Addr)
-	*ok = true
+func (node *Node) ConnectToMe(host PlayerID, ok *bool) (err error) {
+	log.Printf("[ConnectToMe] %d", host)
+	node.game.state.Host = host
+	// TODO
+	// We need to signal that election ended
+	// Error if we don't have an election?
 	return
 }
 
 // HostElection makes everyone with higher latency than you host
 // their own election.
-func (node *Node) HostElection(args *Dict, ok *bool) (err error) {
+func (node *Node) HostElection(args int, ok *bool) (err error) {
 	node.game.Election()
+	*ok = true
+	return
+}
+
+func (node *Node) PushUpdate(update *GameState, ok *bool) (err error) {
+	node.game.lock.Lock()
+	node.game.witnessState(update)
+	node.game.lock.Unlock()
+	node.game.notify()
 	*ok = true
 	return
 }
