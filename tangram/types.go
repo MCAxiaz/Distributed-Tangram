@@ -16,7 +16,7 @@ type GameState struct {
 	Tans    []*Tan `json:"tans"`
 	Timer   time.Time
 	Players []*Player
-	Host    *Player
+	Host    PlayerID `json:"host"`
 	Solved  bool
 }
 

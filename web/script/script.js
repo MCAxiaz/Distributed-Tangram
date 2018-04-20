@@ -90,7 +90,7 @@ var socket;
 var config;
 var state;
 var player;
-document.addEventListener("DOMContentLoaded", function (e) {
+document.addEventListener("DOMContentLoaded", function(e) {
     var view = document.getElementById("view");
     var gPath = document.getElementById("g-path");
     var gText = document.getElementById("g-text");
@@ -191,22 +191,24 @@ document.addEventListener("DOMContentLoaded", function (e) {
         dump.innerHTML = e.data
         var message = JSON.parse(e.data)
         switch (message.type) {
-            case "state":
-                state = message.data
-                render(state);
-                break;
-            case "config":
-                config = message.data;
-                view.setAttribute("width", config.Size.x)
-                view.setAttribute("height", config.Size.y)
-                renderGroups();
-                renderTarget(config);
-                break;
-            case "player":
-                player = message.data;
-                var currentPlayerID = document.getElementById("current-player-id");
-                currentPlayerID.innerHTML = player.ID;
-                break;
+        case "state":
+            state = message.data
+            render(state);
+            var hostInfo = document.getElementById("host-info");
+            hostInfo.innerHTML = state.host
+            break;
+        case "config":
+            config = message.data;
+            view.setAttribute("width", config.Size.x)
+            view.setAttribute("height", config.Size.y)
+            renderGroups();
+            renderTarget(config);
+            break;
+        case "player":
+            player = message.data;
+            var currentPlayerID = document.getElementById("current-player-id");
+            currentPlayerID.innerHTML = player.ID;
+            break;
         }
     });
     socket.addEventListener("open", function (e) {
