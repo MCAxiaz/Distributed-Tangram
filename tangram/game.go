@@ -83,6 +83,10 @@ func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, er
 
 	go game.heartbeat(state.Players)
 
+	// Wait 60 seconds before calculating average latency
+	time.Sleep(60 * time.Second)
+	game.node.player.AvgLatency = game.CalculateAvgLatency()
+
 	return
 }
 
@@ -118,10 +122,8 @@ func (game *Game) pingPlayer(id PlayerID, client *rpc.Client, c chan time.Time) 
 	var ok bool
 	err := client.Call("Node.Ping", game.node.player.ID, &ok)
 	if err != nil {
-		// If there is a disconnection with the host,
-		// set a flag that the host failed.
+		// If there is a disconnection with the host
 		if game.state.Host.ID == id {
-			game.state.HostOnline = false
 			game.Election()
 		}
 		game.dropPlayer(id)

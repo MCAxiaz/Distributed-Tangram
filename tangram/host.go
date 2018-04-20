@@ -35,25 +35,46 @@ func (a *AddrPool) UpdateLatency(id int, latency time.Duration) {
 	a.Mutex.Unlock()
 }
 
-func (game *Game) getHighestPlayerID() (id int) {
-	maxID := game.node.player.ID
+func (game *Game) getLowestPlayerLatency() (latency int) {
+	minLatency := 0
 	for _, player := range game.state.Players {
-		if player.ID > maxID {
-			id = player.ID
+		if player.AvgLatency < minLatency {
+			latency = player.AvgLatency
 		}
 	}
 	return
 }
 
-func (game *Game) getLatenciesFromNodes() {
-	// TODO
+// SendLatenciesOver gets other nodes to send their average latencies over
+func (game *Game) SendLatenciesOver() {
+	for _, player := range game.state.Players {
+		if player.ID == game.node.player.ID {
+			continue
+		}
+		client, err := game.pool.getConnection(player)
+		if err != nil {
+			log.Println(err.Error())
+			err = nil
+			continue
+		}
+
+		var latency *int
+		var args *Dict
+		err = client.Call("Node.GetLatency", &args, &latency)
+		if err != nil {
+			fmt.Println("[Get Latency]: Cannot get latency from peer.")
+			err = nil
+		}
+		player.AvgLatency = *latency
+	}
 }
 
 // Election will start an election with nodes with higher IDs
 func (game *Game) Election() {
-	// TODO: Ask players to send their average latency over
-	// If you have the highest player ID, you are the boss
-	if game.node.player.ID == game.getHighestPlayerID() {
+	// Tell others to send their latencies over
+	game.SendLatenciesOver()
+	// If you have the highest average latency, you are the boss
+	if game.node.player.AvgLatency == game.getLowestPlayerLatency() {
 		client, err := game.pool.getConnection(game.node.player)
 		if err != nil {
 			log.Println(err.Error())
@@ -63,9 +84,9 @@ func (game *Game) Election() {
 		go func(game *Game) {
 			var ok bool
 			var err error
-			err = client.Call("Node.ConnectToNewHost", &game.node.player, &ok)
+			err = client.Call("Node.ConnectToMe", &game.node.player, &ok)
 			if err != nil {
-				fmt.Println("[Host Election]: Cannot broadcast new host.")
+				fmt.Println("[Connect To Me]: Cannot broadcast new host.")
 				err = nil
 			}
 		}(game)

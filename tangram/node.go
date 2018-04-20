@@ -126,6 +126,8 @@ func (node *Node) Connect(req *ConnectRequest, res *ConnectResponse) (err error)
 
 	node.game.state.Players = append(node.game.state.Players, &req.Player)
 
+	node.player.AvgLatency = node.game.CalculateAvgLatency()
+
 	*res = ConnectResponse{node.game.GetState(), node.game.GetConfig(), node.player}
 	return
 }
@@ -163,10 +165,15 @@ func (node *Node) Ping(incID PlayerID, ok *bool) (err error) {
 	return
 }
 
-// ConnectToNewHost connects to new host
-func (node *Node) ConnectToNewHost(host *Player, ok *bool) (err error) {
+// GetLatency retrieves the average latency from a remote node
+func (node *Node) GetLatency(args *Dict, latency *int) (err error) {
+	*latency = node.player.AvgLatency
+	return
+}
 
-	// TODO: Unsubscribe and close connection to previous host
+// ConnectToMe broadcasts yourself as the new host and makes everyone
+// connect to you.
+func (node *Node) ConnectToMe(host *Player, ok *bool) (err error) {
 
 	client, err := rpc.Dial("tcp", host.Addr)
 	if err != nil {
@@ -184,7 +191,8 @@ func (node *Node) ConnectToNewHost(host *Player, ok *bool) (err error) {
 	return
 }
 
-// HostElection receives
+// HostElection makes everyone with higher latency than you host
+// their own election.
 func (node *Node) HostElection(args *Dict, ok *bool) (err error) {
 	node.game.Election()
 	*ok = true
