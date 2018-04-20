@@ -126,8 +126,6 @@ func (node *Node) Connect(req *ConnectRequest, res *ConnectResponse) (err error)
 
 	node.game.state.Players = append(node.game.state.Players, &req.Player)
 
-	node.player.AvgLatency = node.game.CalculateAvgLatency()
-
 	*res = ConnectResponse{node.game.GetState(), node.game.GetConfig(), node.player}
 	return
 }
