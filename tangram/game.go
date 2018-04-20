@@ -239,6 +239,28 @@ func (game *Game) Unsubscribe(s chan bool) {
 }
 
 func (game *Game) notify() {
+	if game.state.Host == game.GetPlayer().ID {
+		state := copyState(game.state)
+		for _, player := range game.interestingPlayers() {
+			if player.ID == game.GetPlayer().ID {
+				continue
+			}
+
+			client, err := game.pool.getConnection(player)
+			if err != nil {
+				log.Println(err.Error())
+				continue
+			}
+
+			go func(client *rpc.Client) {
+				var ok bool
+				err := client.Call("Node.PushUpdate", state, &ok)
+				if err != nil {
+					log.Println(err.Error())
+				}
+			}(client)
+		}
+	}
 	for _, sub := range game.subscribers {
 		select {
 		case sub <- true:

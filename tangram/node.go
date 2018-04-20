@@ -188,6 +188,13 @@ func (node *Node) HostElection(args int, ok *bool) (err error) {
 	return
 }
 
+func (node *Node) PushUpdate(update *GameState, ok *bool) (err error) {
+	node.game.witnessState(update)
+	node.game.notify()
+	*ok = true
+	return
+}
+
 func mapPortLibp2p(ip string, port int) (externalIP string, externalPort int, err error) {
 	nat := nat.DiscoverNAT()
 	if nat == nil {
