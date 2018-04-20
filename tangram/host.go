@@ -13,7 +13,6 @@ import (
 // - Votes: Current votes for next host
 type AddrPool struct {
 	Pool  map[int]time.Duration
-	Wait  time.Time
 	Votes []*Vote
 	Mutex *sync.Mutex
 }
@@ -34,7 +33,6 @@ const hostSwitchTimeout = 60
 func NewAddrPool() *AddrPool {
 	return &AddrPool{
 		Pool:  make(map[int]time.Duration, 0),
-		Wait:  time.Now(),
 		Mutex: &sync.Mutex{},
 	}
 }
@@ -44,15 +42,6 @@ func (a *AddrPool) Empty() {
 	a.Mutex.Lock()
 	a.Votes = make([]*Vote, 0)
 	a.Mutex.Unlock()
-}
-
-// CheckTime checks if the countdown counter is still greater than 0
-func (a *AddrPool) CheckTime() bool {
-	if a.Wait.Sub(time.Now()) >= (hostSwitchTimeout * time.Second) {
-		return true
-	}
-
-	return false
 }
 
 // UpdateLatency updates the latency of the corresponding address
@@ -205,4 +194,13 @@ func (game *Game) tallyVotes() (hostPlayer *Player) {
 	hostPlayer = game.state.getPlayer(hostPlayerID)
 
 	return hostPlayer
+}
+
+// If majority of players thinks the host failed,
+// the host failed.
+func (game *Game) didHostFail() bool {
+	for _, player := range game.state.Players {
+
+	}
+	return
 }

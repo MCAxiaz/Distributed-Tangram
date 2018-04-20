@@ -110,17 +110,7 @@ func (game *Game) heartbeat(players []*Player) {
 				go game.latency.UpdateLatency(player.ID, elapsed)
 			}(player, client)
 		}
-		if len(game.state.Players) > 1 {
-			go updateHost(game)
-		}
 		time.Sleep(1 * time.Second)
-	}
-}
-
-func updateHost(game *Game) {
-	if game.latency.CheckTime() {
-		game.SwitchHost()
-		game.latency.Wait = time.Now()
 	}
 }
 
@@ -128,6 +118,12 @@ func (game *Game) pingPlayer(id PlayerID, client *rpc.Client, c chan time.Time) 
 	var ok bool
 	err := client.Call("Node.Ping", game.node.player.ID, &ok)
 	if err != nil {
+		// If there is a disconnection with the host,
+		// set a flag that the host failed.
+		if game.state.Host.ID == id {
+
+			game.SwitchHost()
+		}
 		game.dropPlayer(id)
 	}
 	c <- time.Now()
