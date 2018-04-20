@@ -339,7 +339,7 @@ func (game *Game) ObtainTan(id TanID, release bool) (ok bool, err error) {
 	// Ask everyone for the tan!
 	n := 0
 	okChan := make(chan bool, len(game.state.Players))
-	for _, player := range game.state.Players {
+	for _, player := range game.interestingPlayers() {
 		if player.ID == game.node.player.ID {
 			continue
 		}
@@ -407,7 +407,7 @@ func (game *Game) MoveTan(id TanID, location Point, rotation Rotation) (ok bool,
 	game.lock.Unlock()
 
 	// Let everyone know!
-	for _, player := range game.state.Players {
+	for _, player := range game.interestingPlayers() {
 		if player.ID == game.node.player.ID {
 			continue
 		}
