@@ -124,6 +124,7 @@ func (node *Node) Connect(req *ConnectRequest, res *ConnectResponse) (err error)
 		}
 	}
 
+	log.Printf("[Connect] Connected by %d", req.Player.ID)
 	node.game.state.Players = append(node.game.state.Players, &req.Player)
 
 	*res = ConnectResponse{node.game.GetState(), node.game.GetConfig(), node.player}
