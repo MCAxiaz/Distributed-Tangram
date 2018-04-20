@@ -44,7 +44,7 @@ func NewGame(config *GameConfig, addr string, playerID int) (game *Game, err err
 
 	node.game = game
 
-	go game.heartbeat(state.Players)
+	go game.heartbeat()
 
 	return
 }
@@ -83,12 +83,12 @@ func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, er
 	game.witnessState(res.State)
 	game.syncTime(state.getPlayer(res.Player.ID))
 
-	go game.heartbeat(state.Players)
+	go game.heartbeat()
 
 	return
 }
 
-func (game *Game) heartbeat(players []*Player) {
+func (game *Game) heartbeat() {
 	for {
 		for _, player := range game.interestingPlayers() {
 			if player.ID == game.node.player.ID {
@@ -533,6 +533,7 @@ func (game *Game) witnessState(state *GameState) {
 
 		game.connectToPeer(player.Addr)
 	}
+	game.state.Host = state.Host
 
 	checkSolution(game.config, state)
 }
