@@ -14,69 +14,33 @@ function openSocket() {
 
 const NO_PLAYER = -1;
 
-function renderTan(model, node) {
-    var id = `tan-${model.id}`
+function renderTan(model, path, txtPath) {
     var transform = `translate(${model.location.x}, ${model.location.y}) rotate(${model.rotation})`;
     var d = "";
-    model.shape.points.forEach(function(point, i) {
+    model.shape.points.forEach(function (point, i) {
         var command = i == 0 ? "M" : "L";
         d += `${command} ${point.x} ${point.y} `;
     });
     d += "Z";
 
-    node.id = id;
-    node.setAttribute('fill', model.shape.fill);
-    // Check if tan is being held by a player, and if it is, show that player's ID on it
-    if (!state.tans[model.id-1]) {
-        console.log("No such tan.");
-    }
-    var txtPath = document.getElementById(`txtPath-tan-${model.id}`);
-    if (state.tans[model.id-1].player !== NO_PLAYER) {
-        // Render player ID to tan
-        if (!txtPath) {
-            console.log(`textPath for tan ${model.id} does not exist.`);
-        } else {
-            node.setAttribute("fill-opacity", "0.5");
-            txtPath.innerHTML = state.tans[model.id-1].player;
-        }
+    path.setAttribute('fill', model.shape.fill);
+    if (model.Matched) {
+        path.setAttribute('stroke', 'green');
     } else {
-        node.setAttribute("fill-opacity", "1");
-        if (!txtPath) {
-            console.log(`textPath for tan ${model.id} does not exist.`);
-        } else {
-            txtPath.innerHTML = "";
-        }
+        path.setAttribute('stroke', model.shape.stroke);
     }
-    node.setAttribute('stroke', model.shape.stroke);
-    // if (model.Matched) {
-    //   node.setAttribute('stroke', 'green');
-    // }
+    path.setAttribute('transform', transform);
+    path.setAttribute('d', d);
 
-    node.setAttribute('transform', transform);
-    node.setAttribute('d', d);
-    node.setAttribute('class', 'draggable');
-    return node
-}
-
-// Attaches textPath to SVG for player's name
-function attachPlayerNameTextToSVG(tanID) {
-    var svg = document.getElementById("g-text");
-    var use = document.createElementNS(view.namespaceURI, "use");
-
-    use.setAttribute("href", `#${tanID}`);
-    var txt = document.createElementNS(view.namespaceURI, "text");
-    txt.setAttribute("font-family", "Verdana");
-    txt.setAttribute("font-size", "12");
-
-    var txtPath = document.createElementNS(view.namespaceURI, "textPath");
-    txtPath.setAttribute("href", `#${tanID}`);
-
-    txtPath.id = `txtPath-${tanID}`;
-    txtPath.innerHTML = "";
-
-    txt.appendChild(txtPath);
-    svg.appendChild(use);
-    svg.appendChild(txt);
+    if (model.player !== NO_PLAYER) {
+        // Render player ID to tan
+        path.classList.add("locked")
+        txtPath.innerHTML = model.player;
+    } else {
+        path.classList.remove("locked")
+        txtPath.innerHTML = "";
+    }
+    return path;
 }
 
 // Displays Solution text when solved
@@ -107,7 +71,7 @@ function createSolutionText(solved) {
 function renderTargetTan(model, offset, node) {
     var transform = `translate(${model.location.x + offset.x}, ${model.location.y + offset.y}) rotate(${model.rotation})`;
     var d = "";
-    model.shape.points.forEach(function(point, i) {
+    model.shape.points.forEach(function (point, i) {
         var command = i == 0 ? "M" : "L";
         d += `${command} ${point.x} ${point.y} `;
     });
@@ -126,29 +90,38 @@ var socket;
 var config;
 var state;
 var player;
-document.addEventListener("DOMContentLoaded", function(e) {
+document.addEventListener("DOMContentLoaded", function (e) {
     var view = document.getElementById("view");
+    var gPath = document.getElementById("g-path");
+    var gText = document.getElementById("g-text");
     var timer = document.getElementById("timer");
     var dump = document.getElementById("dump");
+    
+    function getTan(id) {
+        var model = state.tans.find(function (tan) {
+            return tan.id == id
+        });
 
-    function getTan(model) {
-        var tan = view.getElementById(`tan-${model.id}`);
-
-        if (!tan) {
-            tan = document.createElementNS(view.namespaceURI, "path");
-            renderTan(model, tan);
-            attachPlayerNameTextToSVG(tan.id);
-            var gPath = document.getElementById("g-paths");
-            gPath.appendChild(tan);
-            tan.addEventListener("pointerdown", onMouseDown)
+        if (!model) {
+            // The tan we are trying to find does not exist
+            return null
         }
-        return tan;
+
+        var path = view.getElementById(`tan-${id}`);
+        var text = view.getElementById(`txtPath-${id}`);
+        if (!path) {
+            var result = initializeTan(id);
+            path = result.path;
+            text = result.text;
+        }
+
+        return {model, path, text};
     }
 
     function render(state) {
         for (let tan of state.tans) {
-            let node = getTan(tan);
-            renderTan(tan, node);
+            let {model, path, text} = getTan(tan.id);
+            renderTan(model, path, text);
         }
         createSolutionText(state.Solved)
     }
@@ -158,228 +131,223 @@ document.addEventListener("DOMContentLoaded", function(e) {
     // - highlight the tan to indicate someone has possession of it
     // returns true if tan is successfully locked, false if not
     function lockTan(tanID) {
-        var tan = view.getElementById(`tan-${tanID}`);
+        var {model, path, text} = getTan(tanID)
 
-        if (!tan) {
-            console.log("You are grabbing a tan that does not exist.");
+        if (model.player !== NO_PLAYER && model.player !== player.ID) {
+            console.log(`Another player ${model.player} is already holding onto the tan.`);
             return false;
         }
 
-        // Check if tan is already held by someone else
-        var tanObj = state.tans[tanID-1];
-        if (!tanObj) {
-            console.log("Tan does not exist.");
-            return false;
-        }
+        model.player = player.ID;
+        renderTan(model, path, text);
 
-        if (tanObj.player !== NO_PLAYER && tanObj.player !== player.ID) {
-            console.log("Another player is already holding onto the tan.");
-            return false;
-        } else {
-            tanObj.player = player.ID;
-        }
-
-        // Change path's fill opacity to half
-        tan.setAttribute("fill-opacity", "0.5");
-
-        // Display player name on tan
-        var txtPath = document.getElementById(`txtPath-tan-${tanID}`);
-        if (!txtPath) {
-            console.log(`No such txtPath with tan ${tanID}.`);
-            return false;
-        }
-
-        txtPath.innerHTML = player.ID;
+        socket.send(JSON.stringify({
+            type: "ObtainTan",
+            tan: tanID,
+            release: false
+        }));
 
         console.log(`[Lock tan] Tan ${tanID}: I am possessed by ${player.ID}.`);
-
         return true;
     }
 
     function unlockTan(tanID) {
-        var tan = view.getElementById(`tan-${tanID}`);
+        var {model, path, text} = getTan(tanID)
 
-        if (!tan) {
-            console.log("Cannot unlock a tan that does not exist.");
+        if (model.player !== player.ID) {
+            console.log(`Another player ${model.player} is already holding onto the tan.`);
             return false;
         }
 
-        // Set tan to unlocked
-        var tanObj = state.tans[tanID-1];
-        if (!tanObj) {
-            console.log("There exists no such tan.");
-            return false;
-        }
+        model.player = NO_PLAYER;
+        renderTan(model, path, text);
 
-        tanObj.player = NO_PLAYER;
-
-        // Restore path's fill opacity to 1
-        tan.setAttribute("fill-opacity", "1");
-
-        // Remove player name from tan
-        var txtPath = document.getElementById(`txtPath-tan-${tanID}`);
-        if (!txtPath) {
-            console.log(`No such txtPath with tan ${tanID}`);
-            return false;
-        }
-
-        txtPath.innerHTML = "";
+        socket.send(JSON.stringify({
+            type: "ObtainTan",
+            tan: tanID,
+            release: true
+        }));
 
         console.log(`[Unlock tan] ${tanID}`);
-
         return true;
 
     }
 
     function renderTarget(config) {
-      for (let ttan of config.targets) {
-        let node = document.createElementNS(view.namespaceURI, "path");
-        var gTarget = document.getElementById("g-target");
-        renderTargetTan(ttan, config.Offset, node)
-        gTarget.appendChild(node);
-      }
+        for (let ttan of config.targets) {
+            let node = document.createElementNS(view.namespaceURI, "path");
+            var gTarget = document.getElementById("g-target");
+            renderTargetTan(ttan, config.Offset, node)
+            gTarget.appendChild(node);
+        }
     }
 
     function renderGroups() {
         var view = document.getElementById("view");
-        var gTarget = document.createElementNS(view.namespaceURI, "g");
-        gTarget.id = "g-target";
-        view.appendChild(gTarget);
-        var gPaths = document.createElementNS(view.namespaceURI, "g");
-        gPaths.id = "g-paths";
-        view.appendChild(gPaths);
-        var gText = document.createElementNS(view.namespaceURI, "g");
-        gText.id = "g-text";
-        view.appendChild(gText);
     }
 
     socket = openSocket();
-    socket.addEventListener("message", function(e) {
+    socket.addEventListener("message", function (e) {
         dump.innerHTML = e.data
         var message = JSON.parse(e.data)
         switch (message.type) {
-        case "state":
-            state = message.data
-            render(state);
-            break;
-        case "config":
-            config = message.data;
-            view.setAttribute("width", config.Size.x)
-            view.setAttribute("height", config.Size.y)
-            renderGroups();
-            renderTarget(config);
-            break;
-        case "player":
-            player = message.data;
-            var currentPlayerID = document.getElementById("current-player-id");
-            currentPlayerID.innerHTML = player.ID;
-            break;
+            case "state":
+                state = message.data
+                render(state);
+                break;
+            case "config":
+                config = message.data;
+                view.setAttribute("width", config.Size.x)
+                view.setAttribute("height", config.Size.y)
+                renderGroups();
+                renderTarget(config);
+                break;
+            case "player":
+                player = message.data;
+                var currentPlayerID = document.getElementById("current-player-id");
+                currentPlayerID.innerHTML = player.ID;
+                break;
         }
     });
-    socket.addEventListener("open", function(e) {
+    socket.addEventListener("open", function (e) {
         socket.send(JSON.stringify({
-            type:"GetState"
+            type: "GetState"
         }));
     })
 
-    setInterval(function() {
+    setInterval(function () {
         if (state) {
             var d = Date.now() - new Date(state.Timer).getTime()
             timer.innerHTML = Math.round(d / 1000)
         }
     }, 100)
 
-    function onMouseDown(e) {
-        var path = e.target;
-        var id = parseInt(path.id.match(/tan-(\d+)/)[1]);
-
-        var tan = state.tans.find(function(tan) {
-            return tan.id == id
-        });
-
-        var locked = lockTan(tan.id);
-        if (!locked) {
-            return;
-        }
-
-        console.log(`Holding on to tan id=${id}`);
-
-        var startTanPos = {
-            x: tan.location.x,
-            y: tan.location.y,
-            r: tan.rotation
-        };
-
-        var startMousePos = {
-            x: e.clientX,
-            y: e.clientY
-        };
-
-        var mouseMoveListener = function (e) {
-            tan.location.x = Math.round(Math.max(0, Math.min(startTanPos.x + (e.clientX - startMousePos.x), config.Size.x)));
-            tan.location.y = Math.round(Math.max(0, Math.min(startTanPos.y + (e.clientY - startMousePos.y), config.Size.y)));
-            renderTan(tan, path);
+    function mouseMoveListener(tan, startTanPos, startMousePos) {
+        return (e) => {
+            tan.location.x = Math.round(clamp(startTanPos.x + (e.clientX - startMousePos.x), 0, config.Size.x));
+            tan.location.y = Math.round(clamp(startTanPos.y + (e.clientY - startMousePos.y), 0, config.Size.y));
+            var {path, text} = getTan(tan.id)
+            renderTan(tan, path, text);
             socket.send(JSON.stringify({
                 type: "MoveTan",
                 tan: tan.id,
                 location: tan.location,
                 rotation: tan.rotation
             }));
-        };
-        document.addEventListener("pointermove", mouseMoveListener);
+        }
+    };
 
-        // Rotate tan clockwise or counter-clockwise
-        var rotateListener = function (e) {
-            var key = e.which;
-            var d = 0;
+    // Rotate tan clockwise or counter-clockwise
+    function rotateListener (tan) {
+        return (e) => {
+            const key = e.which;
+            let d = 0;
             switch (key) {
-            case 88:
+                case 88:
                 d = 1;
                 break;
-            case 90:
+                case 90:
                 d = -1
                 break;
             }
+
             if (d) {
                 console.log(`[rotate] ${key}`);
                 tan.rotation = rotate(tan.rotation, d);
-                renderTan(tan, path);
-            }
-            socket.send(JSON.stringify({
-                type: "MoveTan",
-                tan: tan.id,
-                location: tan.location,
-                rotation: tan.rotation
-            }));
-        };
-        document.addEventListener("keydown", rotateListener);
+                var {path, text} = getTan(tan.id);
+                renderTan(tan, path, text);
 
-        document.addEventListener("pointerup", function(e) {
-            var unlock = unlockTan(id);
-            if (!unlock) {
-                console.log(`Error encountered while unlocking tan ${id}`);
+                socket.send(JSON.stringify({
+                    type: "MoveTan",
+                    tan: tan.id,
+                    location: tan.location,
+                    rotation: tan.rotation
+                }));
             }
-            console.log(`Releasing tan id=${id}`);
-            document.removeEventListener("pointermove", mouseMoveListener);
-            document.removeEventListener("keydown", rotateListener);
+        }
+    }
 
-            socket.send(JSON.stringify({
-                type: "ObtainTan",
-                tan: id,
-                release: true
-            }));
-        }, {
-            once:true
+    // Creates DOM nodes necessary to display a tan
+    function initializeTan(tanID) {
+        var path = document.createElementNS(view.namespaceURI, "path");
+        path.id = `tan-${tanID}`;
+        path.addEventListener("pointerdown", onMouseDown);
+        
+        var txt = document.createElementNS(view.namespaceURI, "text");
+        txt.setAttribute("font-family", "Verdana");
+        txt.setAttribute("font-size", "12");
+
+        var txtPath = document.createElementNS(view.namespaceURI, "textPath");
+        txtPath.setAttribute("href", `#${path.id}`);
+
+        txtPath.id = `txtPath-${tanID}`;
+        txtPath.innerHTML = "";
+
+        txt.appendChild(txtPath);
+        gPath.appendChild(path);
+        gText.appendChild(txt);
+
+        return {path, text: txtPath}
+    }
+
+    function onMouseDown(e) {
+        var persistent = e.ctrlKey
+        var path = e.target;
+        var id = parseInt(path.id.match(/tan-(\d+)/)[1]);
+        var tan = state.tans.find(function (tan) {
+            return tan.id == id
         });
 
-        socket.send(JSON.stringify({
-            type: "ObtainTan",
-            tan: id,
-            release: false
-        }));
+        var held = release = tan.player === player.ID;
+        if (persistent) {
+            // Explicit locking
+            if (held) {
+                unlockTan(id);
+            } else {
+                lockTan(id);
+            }
+        } else {
+            // Drag and drop
+            if (!held) {
+                var ok = lockTan(id)
+                if (!ok) {
+                    return
+                }
+            }
+
+            const startTanPos = {
+                x: tan.location.x,
+                y: tan.location.y,
+                r: tan.rotation
+            };
+
+            const startMousePos = {
+                x: e.clientX,
+                y: e.clientY
+            };
+
+            var moveHandler = mouseMoveListener(tan, startTanPos, startMousePos);
+            var rotateHandler = rotateListener(tan);
+            var mouseUpHandler = function(e) {
+                if (!held) {
+                    unlockTan(id)
+                }
+                document.removeEventListener("pointermove", moveHandler);
+                document.removeEventListener("keydown", rotateHandler);
+                document.removeEventListener("pointerup", mouseUpHandler);
+            };
+
+            document.addEventListener("pointermove", moveHandler);
+            document.addEventListener("keydown", rotateHandler);
+            document.addEventListener("pointerup", mouseUpHandler);
+        }
     }
-})
+});
 
 function rotate(r, d) {
     return (r + d * 15 + 720) % 360;
+}
+
+function clamp(x, min, max) {
+    return Math.max(min, Math.min(x, max))
 }
