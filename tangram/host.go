@@ -70,7 +70,7 @@ func (game *Game) selectHost() int {
 }
 
 // SwitchHost will allow nodes to vote for the fastest host and then
-// broadcast the result to other nodes
+// broadcast the result to other nodes.
 func (game *Game) SwitchHost() {
 	players := game.state.Players
 	host := game.selectHost()
@@ -196,11 +196,60 @@ func (game *Game) tallyVotes() (hostPlayer *Player) {
 	return hostPlayer
 }
 
-// If majority of players thinks the host failed,
-// the host failed.
-func (game *Game) didHostFail() bool {
+func (game *Game) getHighestPlayerID() (id int) {
+	maxID := game.node.player.ID
 	for _, player := range game.state.Players {
+		if player.ID > maxID {
+			id = player.ID
+		}
+	}
+	return
+}
 
+// Election will start an election with nodes with higher IDs
+func (game *Game) Election() {
+	// If you have the highest player ID, you are the boss
+	if game.node.player.ID == game.getHighestPlayerID() {
+		client, err := game.pool.getConnection(game.node.player)
+		if err != nil {
+			log.Println(err.Error())
+			err = nil
+		}
+
+		go func(game *Game) {
+			var ok bool
+			var err error
+			err = client.Call("Node.ConnectToNewHost", &game.node.player, &ok)
+			if err != nil {
+				fmt.Println("[Host Election]: Cannot broadcast new host.")
+				err = nil
+			}
+		}(game)
+		return
+	}
+
+	for _, player := range game.state.Players {
+		// Ignore all IDs lower and your own
+		if player.ID <= game.node.player.ID {
+			continue
+		}
+
+		client, err := game.pool.getConnection(player)
+		if err != nil {
+			log.Println(err.Error())
+			err = nil
+			continue
+		}
+
+		go func() {
+			var ok bool
+			var args *Dict
+			err = client.Call("Node.HostElection", &args, &ok)
+			if err != nil {
+				fmt.Println("[Host Election]: Cannot broadcast host election.")
+				err = nil
+			}
+		}()
 	}
 	return
 }

@@ -197,6 +197,13 @@ func (node *Node) AskForHost(args *Dict, host *Player) (err error) {
 	return
 }
 
+// HostElection receives
+func (node *Node) HostElection(args *Dict, ok *bool) (err error) {
+	node.game.Election()
+	*ok = true
+	return
+}
+
 func mapPortLibp2p(ip string, port int) (externalIP string, externalPort int, err error) {
 	nat := nat.DiscoverNAT()
 	if nat == nil {

@@ -1,6 +1,18 @@
 # Decentralized Tangram
 A go client for running a game of Tangram
 
+## Running on Azure
+Run the following commands after ssh-ing into the server of choice.
+```
+$ cd tan
+$ kill $(cat pid) 
+$ go build
+$ nohup ./tan > web/application.log 2>&1 </dev/null &
+$ echo $! > pid
+```
+
+If the application is connecting to a server, run `nohup ./tan -c <server> > web/application.log 2>&1 </dev/null &` instead.
+
 ## Usage
 1. Run the program: `go run client.go [-c remoteAddr] [-p rpcPort] [clientAddr]`
 1. Navigate to `[clientAddr]` to see the browser client

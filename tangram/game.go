@@ -121,7 +121,7 @@ func (game *Game) pingPlayer(id PlayerID, client *rpc.Client, c chan time.Time) 
 		// If there is a disconnection with the host,
 		// set a flag that the host failed.
 		if game.state.Host.ID == id {
-
+			game.state.HostOnline = false
 			game.SwitchHost()
 		}
 		game.dropPlayer(id)
@@ -436,9 +436,10 @@ func (game *Game) lockTan(tanID TanID, playerID PlayerID, time lamport.Time) (ok
 		return
 	}
 
+	oldTime := tan.Clock.Time()
 	ok = tan.Clock.Witness(time)
 	if ok {
-		tan.Player = determineOwner(tan.Player, tan.Clock.Time(), playerID, time)
+		tan.Player = determineOwner(tan.Player, oldTime, playerID, time)
 
 		if tan.Player != playerID {
 			ok = false
@@ -471,7 +472,6 @@ func determineOwner(currentHolder PlayerID, tanTime lamport.Time, playerID Playe
 		}
 
 		log.Printf("[lockTan] Resolution: %v holds the lock\n", lockHolder)
-
 	} else {
 		lockHolder = playerID
 	}
@@ -506,12 +506,13 @@ func (game *Game) witnessTan(newTan *Tan) {
 	}
 
 	time := newTan.Clock.Time()
+	oldTime := tan.Clock.Time()
 	ok := tan.Clock.Witness(time)
 	log.Printf("[witnessTan] Witness ID = %d, ok = %t\n", tan.ID, ok)
 	if ok {
 		tan.Location = newTan.Location
 		tan.Rotation = newTan.Rotation
-		tan.Player = determineOwner(tan.Player, tan.Clock.Time(), newTan.Player, time)
+		tan.Player = determineOwner(tan.Player, oldTime, newTan.Player, time)
 	}
 	checkSolution(game.config, game.state)
 }

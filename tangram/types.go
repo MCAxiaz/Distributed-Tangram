@@ -13,11 +13,12 @@ import (
 // - Players: It holds the players currently in the game.
 // - Host: The player that is hosting the game.
 type GameState struct {
-	Tans    []*Tan `json:"tans"`
-	Timer   time.Time
-	Players []*Player
-	Host    *Player `json:"host"`
-	Solved  bool
+	Tans       []*Tan `json:"tans"`
+	Timer      time.Time
+	Players    []*Player
+	Host       *Player `json:"host"`
+	HostOnline bool
+	Solved     bool
 }
 
 // GameConfig is the starting configuration of a game
