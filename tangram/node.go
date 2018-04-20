@@ -174,6 +174,7 @@ func (node *Node) GetLatency(req int, latency *time.Duration) (err error) {
 // ConnectToMe broadcasts yourself as the new host and makes everyone
 // connect to you.
 func (node *Node) ConnectToMe(host PlayerID, ok *bool) (err error) {
+	log.Printf("[ConnectToMe] %d", host)
 	node.game.state.Host = host
 	// TODO
 	// We need to signal that election ended

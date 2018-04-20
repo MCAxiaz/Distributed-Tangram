@@ -83,9 +83,9 @@ func ConnectToGame(remoteAddr string, addr string, playerID int) (game *Game, er
 	game.state = state
 	game.config = config
 
+	game.witnessState(res.State)
 	game.lock.Unlock()
 
-	game.witnessState(res.State)
 	game.syncTime(state.getPlayer(res.Player.ID))
 
 	go game.heartbeat()
@@ -563,7 +563,6 @@ func (game *Game) witnessState(state *GameState) {
 			game.connectToPeer(player)
 		}
 		go game.measureLatency(player)
-
 	}
 
 	checkSolution(game.config, state)

@@ -34,6 +34,7 @@ func NewAddrPool() *AddrPool {
 // UpdateLatency updates the latency of the corresponding address
 func (a *AddrPool) UpdateLatency(id PlayerID, latency time.Duration) {
 	a.Mutex.Lock()
+	log.Printf("[UpdateLatency] ID = %d, latency = %d", id, latency)
 	a.MyPing[id] = latency
 	a.Mutex.Unlock()
 }
@@ -59,9 +60,10 @@ func (game *Game) SendLatenciesOver() {
 			var latency time.Duration
 			err := client.Call("Node.GetLatency", 0, &latency)
 			if err != nil {
-				fmt.Println("[Get Latency]: Cannot get latency from peer.")
+				fmt.Println("[Get Latency] Cannot get latency from %d.", player)
 				return
 			}
+			log.Printf("[Get Latency] Got latency from %d.", player)
 			game.latency.AvgPing[player] = latency
 		}(client, player.ID)
 	}
@@ -106,6 +108,7 @@ func (game *Game) Election() {
 
 			// If we reached here, someone finished the election?
 			// TODO Figure out what it means to reach here
+			log.Printf("Node.HostElection returned from ID = %d", player.ID)
 			return
 		}
 	}
@@ -113,19 +116,23 @@ func (game *Game) Election() {
 	// It is now our turn to become host
 	// TODO tell everyone to listen to you
 	game.state.Host = myPlayer
+	log.Printf("[Election] Declaring host ID = %d", myPlayer)
 	for _, player := range game.interestingPlayers() {
+
 		if player.ID == myPlayer {
 			continue
 		}
 
 		client, err := game.pool.getConnection(player)
 		if err != nil {
+			log.Println(err.Error())
 			continue
 		}
 
 		var ok bool
-		err = client.Call("Node.ConnectToMe", 0, &ok)
+		err = client.Call("Node.ConnectToMe", myPlayer, &ok)
 		if err != nil {
+			log.Println(err.Error())
 			continue
 		}
 	}
