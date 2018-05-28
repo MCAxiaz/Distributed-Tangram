@@ -1,0 +1,204 @@
+{
+    "Host": false,
+    "Size": {
+        "x": 800,
+        "y": 600
+    },
+    "Offset": {
+        "x": 350,
+        "y": 90
+    },
+    "Margin": 2,
+    "Tans": [
+        {
+            "id": 1,
+            "type": "LTri",
+            "shape": {
+                "points": [
+                    { "x": -100, "y": -50 },
+                    { "x": 0, "y": 50 },
+                    { "x": 100, "y": -50 }
+                ],
+                "fill": "#4fdbbf",
+                "stroke": "#10676c"
+            },
+            "location": { "x": 100, "y": 50 }
+        },
+        {
+            "id": 2,
+            "type": "LTri",
+            "shape": {
+                "points": [
+                    { "x": -100, "y": -50 },
+                    { "x": 0, "y": 50 },
+                    { "x": 100, "y": -50 }
+                ],
+                "fill": "#6a6ef0",
+                "stroke": "#373a90"
+            },
+            "location": { "x": 50, "y": 100 },
+            "rotation": 270
+        },
+        {
+            "id": 3,
+            "type": "STri",
+            "shape": {
+                "points": [
+                    { "x": 25, "y": -50 },
+                    { "x": -25, "y": 0 },
+                    { "x": 25, "y": 50 }
+                ],
+                "fill": "#ef8ece",
+                "stroke": "#9d2a76"
+            },
+            "location": { "x": 175, "y": 50 }
+        },
+        {
+            "id": 4,
+            "type": "Cube",
+            "shape": {
+                "points": [
+                    { "x": 0, "y": -50 },
+                    { "x": -50, "y": 0 },
+                    { "x": 0, "y": 50 },
+                    { "x": 50, "y": 0 }
+                ],
+                "fill": "#dfd780",
+                "stroke": "#946c21"
+            },
+            "location": { "x": 150, "y": 100 }
+        },
+        {
+            "id": 5,
+            "type": "STri",
+            "shape": {
+                "points": [
+                    { "x": 25, "y": -50 },
+                    { "x": -25, "y": 0 },
+                    { "x": 25, "y": 50 }
+                ],
+                "fill": "#ce93fc",
+                "stroke": "#4f2977"
+            },
+            "location": { "x": 100, "y": 125 },
+            "rotation": 90
+        },
+        {
+            "id": 6,
+            "type": "Pgram",
+            "shape": {
+                "points": [
+                    { "x": -25, "y": -25 },
+                    { "x": -75, "y": 25 },
+                    { "x": 25, "y": 25 },
+                    { "x": 75, "y": -25 }
+                ],
+                "fill": "#78e77b",
+                "stroke": "#296b12"
+            },
+            "location": { "x": 75, "y": 175 }
+        },
+        {
+            "id": 7,
+            "type": "MTri",
+            "shape": {
+                "points": [
+                    { "x": 25, "y": -75 },
+                    { "x": -75, "y": 25 },
+                    { "x": 25, "y": 25 }
+                ],
+                "fill": "#f39f8c",
+                "stroke": "#8f3723"
+            },
+            "location": { "x": 175, "y": 175 }
+        }
+    ],
+    "Targets": [
+      {
+          "type": "LTri",
+          "shape": {
+              "points": [
+                  { "x": -100, "y": -50 },
+                  { "x": 0, "y": 50 },
+                  { "x": 100, "y": -50 }
+              ]
+          },
+          "location": { "x": 150, "y": 322 },
+          "rotation": 315
+      },
+      {
+          "type": "LTri",
+          "shape": {
+              "points": [
+                  { "x": -100, "y": -50 },
+                  { "x": 0, "y": 50 },
+                  { "x": 100, "y": -50 }
+              ]
+          },
+          "location": { "x": 135, "y": 216 },
+          "rotation": 270
+      },
+      {
+          "type": "STri",
+          "shape": {
+              "points": [
+                  { "x": 25, "y": -50 },
+                  { "x": -25, "y": 0 },
+                  { "x": 25, "y": 50 }
+              ]
+          },
+          "location": { "x": 75, "y": 50 },
+          "rotation": 0
+      },
+      {
+          "type": "STri",
+          "shape": {
+              "points": [
+                  { "x": 25, "y": -50 },
+                  { "x": -25, "y": 0 },
+                  { "x": 25, "y": 50 }
+              ]
+          },
+          "location": { "x": 25, "y": 50 },
+          "rotation": 180
+      },
+      {
+          "type": "Cube",
+          "shape": {
+              "points": [
+                  { "x": 0, "y": -50 },
+                  { "x": -50, "y": 0 },
+                  { "x": 0, "y": 50 },
+                  { "x": 50, "y": 0 }
+              ]
+          },
+          "location": { "x": 50, "y": 101 },
+          "rotation": 0
+      },
+      {
+          "type": "MTri",
+          "shape": {
+              "points": [
+                  { "x": 25, "y": -75 },
+                  { "x": -75, "y": 25 },
+                  { "x": 25, "y": 25 }
+              ]
+          },
+          "location": { "x": 50, "y": 187 },
+          "rotation": 135
+      },
+      {
+          "type": "Pgram",
+          "shape": {
+              "points": [
+                  { "x": -25, "y": -25 },
+                  { "x": -75, "y": 25 },
+                  { "x": 25, "y": 25 },
+                  { "x": 75, "y": -25 }
+              ]
+          },
+          "location": { "x": 239, "y": 298 },
+          "rotation": 330
+      }
+    ]
+}

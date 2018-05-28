@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tangram</title>
+    <script src="script/script.js"></script>
+    <style>
+        #view {
+            border: solid 2px
+        }
+
+        .draggable {
+            cursor: move;
+        }
+
+        textPath {
+            user-select: none;
+        }
+
+        text {
+            user-select: none;
+        }
+
+        #g-text {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div>Time: <span id="timer"></span></div>
+    <svg id="view">
+        <style>
+            .locked {
+                fill-opacity: 0.5
+            }
+        </style>
+        <g id="g-target"></g>
+        <g id="g-path"></g>
+        <g id="g-text"></g>
+    </svg>
+    <h2>Players</h2>
+    <div id="current-players">
+    </div>
+    <h2>Host</h2>
+    <div id="host">
+        <p>ID: <span id="host-info"></span></p>
+    </div>
+    <h2>Game Controls</h2>
+    <div id="game-controls">
+        <p>1. Using the mouse, ctrl+click a tan to take possession of it. ctrl+click again to drop the tan.</p>
+        <p>2. Once you are holding onto the tan, you can drag it to a different place by moving the mouse.</p>
+        <p>3. Use 'x' while holding the tan to rotate it clockwise.</p>
+        <p>4. Use 'z' while holding the tan to rotate it counter-clockwise.</p>
+        <p>5. Have fun! :)</p>
+    </div>
+    <h2>Debug dump</h2>
+    <div id="dump"></div>
+</body>
+</html>
